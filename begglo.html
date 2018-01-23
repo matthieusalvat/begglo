@@ -1,0 +1,437 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Begglo</title>
+<script type="text/javascript" src="../jquery-1.9.1.js"></script>
+<script type="text/javascript" src="../jquery-ui-1.10.3.custom.min.js"></script>
+<script type="text/javascript" src="../jquery.cookie.js"></script>
+
+<script language="JavaScript">
+
+Array.prototype.shuffle = function() {
+var s = [];
+while (this.length) s.push(this.splice(Math.random() * this.length, 1)[0]);
+while (s.length) this.push(s.pop());
+return this;
+};
+
+Object.size = function(obj) {
+    var size = 0, key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
+}
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--[if lt IE 9]>
+	<script src="http://css3-mediaqueries-js.googlecode.com/svn/trunk/css3-mediaqueries.js"></script>
+<![endif]-->
+<style type="text/css"> 
+#pagewrap {
+	width: 95%;
+	margin: 0 auto;
+}
+
+#header {
+	height: 0px;
+}
+
+#content {
+	width: 70%;
+	padding: 3% 4%;
+	float: left;
+}
+
+#sidebar {
+	width: 30%;
+	float: right;
+}
+
+#footer {
+	clear: both;
+}
+
+.letter {
+        float: left;
+	border: 2px solid SteelBlue;
+        margin-left:10px;
+	text-align: center;
+	background-color: white;
+	/* round corners */
+	border-radius: 8px; /* Opera, Chrome */
+	-moz-border-radius: 8px; /* FF */
+}
+
+
+/* drag object (DIV inside table cell) */
+.drag{
+	margin: auto;
+	text-align: center;
+        float:left;
+	line-height: 60px;
+	border: 2px solid SteelBlue;
+	background-color: white;
+	/* round corners */
+	border-radius: 8px; /* Opera, Chrome */
+	-moz-border-radius: 8px; /* FF */
+}
+
+.clearBoth{
+clear:both;
+}
+
+.ko {
+color: #F90;
+}
+
+a {
+ color: SteelBlue;
+}
+
+.ok {
+color: SteelBlue;
+}
+
+.pointer{
+  cursor:  pointer;
+}
+
+.center {
+   text-align: center;
+}
+
+.small {width: 15%;}
+
+.big {width: 40%;}
+
+.drop_hover{
+  background-color: SteelBlue;
+}
+
+img {
+  border:0px;
+  height: 30px;
+}
+
+</style>
+</head>
+<body>
+  <div id="pagewrap">
+    <header id="header">
+    </header>
+    <div id="content">
+      <table id="drop_table">
+        <tr id="tr_pile"></tr>
+        <tr id="tr_slot"></tr>
+      </table>
+    </div>
+    <aside id="sidebar">
+      <section class="widget">
+        <div id="start_game_link" onclick="javascript:start_game();" class="small pointer"><img id="start_game_img" src='../images/start_on.png' /></div>
+        <div class="big"><span id="language"></span> <span id="points">0</span>/<span id="total">?</span> - <span id="countdown">??s</span></div>
+        <div onClick="open_infos();"  class="small pointer"><img src="../images/help.png" /></div>
+        <div onClick="open_options();"  class="small pointer"><img src="../images/options.png" /></div>
+      </section>
+    </aside>
+    <footer id="footer">
+    </footer>
+  </div>
+
+<script language="JavaScript">
+var dict={};
+$("body").attr('unselectable','on').css('MozUserSelect','none');
+
+window.onload = function() {
+   init_game();
+}
+
+var placed_letters={};
+var occuped_slots={};
+
+function init_game(){
+   letters=["R", "E", "P", "O", "S"];
+   for (var i=0; i<letters.length; i++) {
+     $('<td></td>').attr('id', 'pile'+i).attr('class', "mydrop").appendTo("#tr_pile");
+     $('<td></td>').attr('id', 'slot'+i).attr('class', "mydrop").appendTo("#tr_slot");
+   }
+
+   for (var i=0; i<letters.length; i++) {
+     $('<div>'+letters[i]+'</div>').data('letter', letters[i]).attr('class', 'letter').attr('id', 'letter'+i).appendTo('#pile'+i).draggable({
+       containment:'#drop_table',
+       cursor: 'move',
+       revert: 'invalid'
+     });
+     occuped_slots['pile'+i]='letter'+i;
+     placed_letters['letter'+i]='pile'+i;
+
+   }
+   $('.mydrop').droppable({
+       accept: function(e){
+         var letter_id=e.attr("id");
+         var slotId=$(this).attr("id");
+         return (occuped_slots[slotId]==null) ? true: false;
+       },
+       drop: handleLetterDrop,
+   });
+
+}
+
+function handleLetterDrop(e,ui) {
+   var slotId = $(this).attr('id');
+   var letter=ui.draggable.data('letter');
+   var letter_id=ui.draggable.attr('id');
+   if (placed_letters[letter_id] != null) {
+     console.debug("authorise drop on slot "+placed_letters[letter_id]);
+     occuped_slots[placed_letters[letter_id]]=null;
+     placed_letters[letter_id]=null;
+   }
+
+   occuped_slots[slotId]=letter_id;
+   placed_letters[letter_id]=slotId;
+   console.debug("block drop on slot "+slotId);
+   ui.draggable.position({of: $(this), my: 'left top', at: 'left top'});
+   
+}
+
+
+function searchKeyPress(e) {
+    // look for window.event in case event isn't passed in
+    if (typeof e == 'undefined' && window.event) { e = window.event; }
+    if (e.keyCode == 13) {
+       var user_try=document.getElementById("user_try").value;
+       verify_word(user_try);       
+    }
+}
+
+function verify_word(user_try, letters_places) {
+   if (timer<=0) 
+      return;
+
+   user_try=strip_accents(user_try.toLowerCase());
+   var color="white";
+   if (words[user_try] != null) {
+      if (responses[user_try] == null) {
+         responses[user_try]=Object.size(responses[user_try]);
+         if (user_try.length==letters.length) {
+            timer+=parseInt(options.max_word_found_bonus);
+         } else {
+            timer+=parseInt(options.word_found_bonus);
+         }
+         document.getElementById("message").innerHTML="OK, un point de plus !";
+         var words_url=[];
+         words[user_try].forEach(function(my_word){
+	       words_url.push("<a class='ok' target='_blank' href='"+dictionaries[options.dictionary].definition_url.replace("[WORD]", my_word)+"'>"+my_word+"</a>");
+         });
+         
+         $("#responses"+user_try.length).html(words_url.join(", ")+"<br/>"+$("#responses"+user_try.length).html());
+         color="#9C0";
+      } else {
+         document.getElementById("message").innerHTML="KO, réponse déjà donnée !";
+         color="#F90";
+      }
+   }else {
+         document.getElementById("message").innerHTML="KO, le mot '"+user_try+"' n'est pas reconnu !";
+   }
+   var ld=letters_div;
+   if (letters_places == null) {
+        letters_places={};
+        user_try.split("").forEach(function(letter){
+           letters_places[letters_div[letter]]=1;
+        });
+   }
+
+   for (var i=0; i<letters.length; i++) {
+       letters_div[letters[i]]
+       if (letters_places!=null && letters_places["l"+i]) {
+          document.getElementById("l"+i).style.backgroundColor=color;
+       }else {
+          document.getElementById("l"+i).style.backgroundColor="white";
+       }
+   }
+ 
+   $("#user_try").val("");
+
+   $("#points").html(Object.size(responses));
+
+   if (color != "white")
+      setTimeout(clear_letters_color, 500);    
+
+   if (Object.size(responses)==Object.size(words)) {
+      stop_game("all_found");
+   }
+}
+
+function clear_letters_color() {
+   for (var i=0; i<letters.length; i++) {
+       document.getElementById("l"+i).style.backgroundColor="white";
+   }
+}
+
+var words={};
+var responses={};
+var letters_number=5;
+var letters=[];
+var letters_div={};
+
+function stop_game(cause) {
+   clearTimeout(timeout);
+
+   $("#stop_game_img").attr("src", "./images/stop_off.png");
+   $("#stop_game_link").attr("onclick", "");
+   $("#stop_game_link").toggleClass("pointer");
+
+   $("#start_game_img").attr("src", "./images/start_on.png");
+   $("#start_game_link").attr("onclick", "start_game();");
+   $("#start_game_link").toggleClass("pointer");
+
+   document.getElementById("touch_div").style.display="none";
+   document.getElementById("keyboard_div").style.display="none";
+   $("#solutions").show();
+   $("#responses").hide();
+
+   $("#total").html(Object.size(words));
+
+   var html="";
+   $("#result_message").removeClass("ok ko");
+   if (cause=="timeout") {
+     $("#result_message").html("Temps écoulé !");
+     $("#result_message").addClass("ko");
+   } else if (cause=="all_found") {
+     $("#result_message").html("Bravo !")
+     $("#result_message").addClass("ok");;
+   } else {
+     $("#result_message").html("Abandon !");
+     $("#result_message").addClass("ko");
+   }
+   
+
+   var solutions_by_size={3: "", 4: "", 5: ""};
+   for (var key in words) {
+      var line_style=" class='ko'";
+      if (responses[key]!=null) 
+         line_style=" class='ok'";
+
+      var words_url=[];
+      words[key].forEach(function(my_word){
+	   words_url.push("<a"+line_style+"target='_blank' href='"+dictionaries[options.dictionary].definition_url.replace("[WORD]", my_word)+"'>"+my_word+"</a>");
+      });
+         
+      solutions_by_size[key.length]+=words_url.join(", ")+"<br>";
+   }
+   $("#solutions3").html(solutions_by_size[3]);
+   $("#solutions4").html(solutions_by_size[4]);
+   $("#solutions5").html(solutions_by_size[5]);
+//   document.getElementById("solutions").innerHTML=html;
+   $("#solutions").show();
+}
+
+var force_letters;
+
+function start_game(){
+   $("#touch_div").show();
+  
+   if (options.mode == "touch") {
+       $("#keyboard_div").hide();
+   } else if (options.mode == "keyboard") {
+       $("#keyboard_div").show();
+       document.getElementById("user_try").focus();
+   }
+
+   $("#stop_game_img").attr("src", "./images/stop_on.png");
+   $("#stop_game_link").attr("onclick", "stop_game();");
+   $("#stop_game_link").toggleClass("pointer");
+
+   $("#start_game_img").attr("src" ,"./images/start_off.png");
+   $("#start_game_link").attr("onclick", "");
+   $("#start_game_link").toggleClass("pointer");
+
+   $("#points").html(0);
+   if (timeout != null) 
+      clearTimeout(timeout);
+
+   words={};
+   responses={};
+
+   var word_index = parseInt(Math.random() * dict[5].length);
+
+   var infos=dict[5][word_index].split(" ");
+
+   var letters_str=infos[0];
+
+   if (force_letters != null && force_letters != "" && force_letters.length==5)  {
+      letters_str=force_letters;
+      force_letters="";
+   }
+   var word=infos[1];
+
+   $("#solutions").hide();
+   $("#user_try").val("");
+
+   $("#responses3").html("");
+   $("#responses4").html("");
+   $("#responses5").html("");
+   $("#responses").show();
+
+   if (options.mode == "keyboard")
+      document.getElementById("user_try").focus();
+
+   letters=letters_str.toUpperCase().split("").shuffle();
+   words=find_solutions(letters);
+
+/*
+   for (var i=0; i<letters.length; i++) {
+       document.getElementById("l"+i).innerHTML=letters[i];
+       letters_div[letters[i].toLowerCase()]="l"+i;
+       REDIPS.drag.move_object({
+         obj: document.getElementById("l"+i),
+         target: [0, 0, i+1]
+//         target: [0, 0, i]
+      });
+   }
+*/
+   if (options.view_solutions_number) {
+       document.getElementById("total").innerHTML=Object.size(words);
+   } else {
+       document.getElementById("total").innerHTML="?";
+   }
+   timer=parseInt(options.init_timer)+1;
+
+   if (options.timer_active) {
+     tick();
+   }     
+//   document.getElementById("letters").innerHTML=letters.shuffle().join(" ");
+}
+
+
+function find_solutions(letters) {
+    words={};
+    var re=new RegExp("^"+letters.sort().join("?")+"?$", "i");
+    for (var length=3; length<6; length++) {
+        var lines=dict[length];
+        lines.forEach(function(line) {
+            if (line.substring(0, length).match(re)) {
+	        var word=line.substring(length+1);
+                var key=strip_accents(word);
+		if (words[key] == null) {
+                    words[key]=[];
+                }
+                words[key].push(word);
+	    }
+	});
+    }
+   return words;
+}
+
+function strip_accents(s) {
+  var translate = {
+    "à":"a","á":"a","â":"a","ã":"a","ä":"a","å":"a","ç":"c","è":"e","é":"e","ê":"e","ë":"e","ì":"i","í":"i","î":"i","ï":"i","ñ":"n","ò":"o","ó":"o","ô":"o","õ":"o","ö":"o","ù":"u","ú":"u","û":"u","ü":"u","ý":"y","ÿ":"y"
+  };
+  var translate_re = /[àáâãäåçèéêëìíîïñòóôõöùúûüýÿ]/g;
+  return ( s.replace(translate_re, function(match) { 
+    return translate[match]; 
+  }) );
+}
+</script>
+
+</body></html>

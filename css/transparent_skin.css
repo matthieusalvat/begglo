@@ -1,0 +1,33 @@
+body, a {
+    color: white;
+}
+
+.letter {
+    color: #333;
+}
+
+
+.resp{
+    background-color: #EEEEEE;
+    border: 1px dotted black;
+    box-shadow: none;
+    color: black;
+}
+
+.warning{
+    background-color: red;
+}
+
+#menu {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.bonus {
+    color: #555555;
+}
+
+#content {
+    background-color: transparent;
+}
+
