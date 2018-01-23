@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width">
+
+	<script src="jquery-1.9.1.js"></script>
+	<script src="jquery-ui.js"></script>	
+
+	<script src="./jquery.cookie.js"></script>
+	<script src="./jquery.ui.touch-punch.min.js"></script>
+
+	<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+        <link rel="stylesheet" href="css/normalize.min.css">
+        <link rel="stylesheet" href="css/main.css">
+	<link rel="stylesheet" href="jquery-ui.css">
+
+        <link rel="stylesheet" href="css/begglo.css">
+
+        <script src="js/vendor/modernizr-2.6.2.min.js"></script>
+     </head>
+     <body style="-moz-user-select: none;" unselectable="on" class="fa">
+	 <!--[if lt IE 7]>
+	     <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+	 <![endif]-->
+	 <div id="content">
+	   <div id="options" class="" style="display:none">
+	       <label for="letters_range">Nombre de lettres : <span id="letters_range"></span></label>
+  	       <div id="letters_slider"></div>
+           </div>
+	   <div id="intro" style="display:none">
+             <p>BEGGLO</p>
+	     <p>Démarrer une partie en appuyant sur le bouton <i class="start fa fa-play"></i></p>
+	     <p>Déplacer les lettres afin de trouver le plus de mots</p>
+	     <p>Paramètrer le jeu via la page <i class="opt fa fa-cog"></i></p>
+	   </div>
+	   <div id="game">
+	     <table id="drop_table">
+               <tr id="tr_pile"></tr>
+               <tr id="tr_slot"></tr>
+	     </table>
+             <div id="progression"></div>
+	   </div>
+           <div id="responses" style="display:none">
+           </div>
+	 </div>
+
+	 <div id="menu">
+           <div>
+  	     <div class="start button fa fa-play fa-2x"></div>
+	     <div class="stop button fa fa-stop fa-2x" style="display: none"></div>
+	     <div class="opt button fa fa-cog fa-2x"></div>
+	     <div class="help button fa fa-question-circle fa-2x" style="display: none"></div>
+             <div id="discover" style="display: none;"><span id="words_found">0</span>/<span id="total_words">??</span></div>
+             <div id="progressbar"></div>
+	   </div>
+	 </div>
+	 <div id="footer">
+	   Begglo version 2.0
+	 </div>
+	<script language="JavaScript">
+$("body").attr('unselectable','on').css('MozUserSelect','none');
+
+var options={
+   "dictionary" : "fr",
+   "min_letters" : 3,
+   "max_letters" : 5,
+};
+var dictionaries={
+   "fr" : {
+     "file" : "dict.fr.json",
+     "definition_url" : "http://fr.wiktionary.com/wiki/[WORD]",
+     "source" : "package hunspell-dictionary-fr sur Ubuntu",
+     "label": "Français"
+   }
+};
+var letter_size;
+
+window.onload = function() {
+  $("body").attr('unselectable','on').css('MozUserSelect','none');
+  init_game();
+}
+
+
+$(".start").click(start_game);
+$(".stop").click(stop_game);
+$(".help").click(open_help);
+$(".opt").click(open_options);
+
+
+Array.prototype.shuffle = function() {
+  var s = [];
+  while (this.length) s.push(this.splice(Math.random() * this.length, 1)[0]);
+  while (s.length) this.push(s.pop());
+  return this;
+};
+
+function open_help() {
+   $(".start").show();
+   $(".stop").hide();
+   $(".opt").show();
+   $(".help").hide();
+   $("#discover").hide();
+   $("#options").hide();
+   $("#game").hide();
+   $("#intro").show();
+}
+
+function strip_accents(s) {
+  var translate = {
+    "à":"a","á":"a","â":"a","ã":"a","ä":"a","å":"a","ç":"c","è":"e","é":"e","ê":"e","ë":"e","ì":"i","í":"i","î":"i","ï":"i","ñ":"n","ò":"o","ó":"o","ô":"o","õ":"o","ö":"o","ù":"u","ú":"u","û":"u","ü":"u","ý":"y","ÿ":"y"
+  };
+  var translate_re = /[àáâãäåçèéêëìíîïñòóôõöùúûüýÿ]/g;
+  return ( s.replace(translate_re, function(match) { 
+    return translate[match]; 
+  }) );
+}
+
+
+var placed_letters={};
+var occuped_slots={};
+var letters;
+var current_dict={};
+var responses={};
+var solutions={};
+var words={};
+
+$.cookie.json = true;
+
+var dict_loaded=0;
+
+function save_options() {
+  console.debug("save option in cookie");
+  $.cookie("begglo_options", options);
+}
+
+function load_options() {
+  var cookie_options=$.cookie("begglo_options");
+  console.debug(cookie_options);
+  if (cookie_options!=null && cookie_options.dictionary != null) {
+    options=cookie_options;
+  } else {
+    console.debug("use defaut options");
+    save_options();
+  }
+
+  console.debug(options);
+}
+
+function load_dict() {
+   //console.debug("load dict."+options.dictionary+".json");
+   console.debug(dictionaries[options.dictionary].file);
+   if (current_dict == null || current_dict.lang != options.dictionary) {
+     console.debug("load dict "+options.dictionary);
+     $.ajax({
+       dataType: "json",
+       url: dictionaries[options.dictionary].file,
+       async: false,
+       success: function(data) {
+         current_dict=data;
+       }});
+   }
+   var downloaded_size=0;
+   var prevision_size=0;
+   var threads=[];
+   $( "#progressbar" ).progressbar({ value: false });
+   $( "#progressbar" ).show();
+   for (var i=options.min_letters; i<=options.max_letters; i++) {
+       if (current_dict[i]==null) {
+         prevision_size+=current_dict.words[i]*(i*2+4)*1.023;
+       }
+   }
+   $("#progressbar").progressbar({ max: prevision_size });
+   for (var i=options.min_letters; i<=options.max_letters; i++) {
+       if (current_dict[i]==null) {
+         console.debug("start download for file "+i+" words");
+         var async= $.ajax({
+           dataType: "json",
+           cache: true,
+           words_length: i,
+           url: current_dict.lang+"/"+i+".json",
+           async: false,
+           success: function(data) {
+             var i = this.words_length;
+             downloaded_size+=current_dict.words[i]*(i*2+4)*1.023;
+             console.debug("file "+i+" words downloaded : "+downloaded_size);
+             $( "#progressbar" ).progressbar({ value: downloaded_size });
+             current_dict[i]=data;
+           }
+         });
+         threads.push(async);
+       }
+   }
+   $( "#progressbar" ).hide();
+
+   console.debug(prevision_size);
+   console.debug(current_dict);
+}
+
+function find_solutions(letters) {
+    var solutions={
+      "words":{},
+      "size":{
+        "total":0
+      }
+    };
+    words={};
+    var re=new RegExp("^"+letters.sort().join("?")+"?$", "i");
+    for (var length=options.min_letters; length<=options.max_letters; length++) {
+        solutions.size[length]=0;
+        var lines=current_dict[length];
+        lines.forEach(function(line) {
+            if (line.substring(0, length).match(re)) {
+	        var word=line.substring(length+1);
+                var key=strip_accents(word);
+		if (solutions.words[key] == null) {
+                    solutions.size[length]++;
+                    solutions.size["total"]++;
+                    solutions.words[key]=[];
+                }
+                solutions.words[key].push(word);
+	    }
+	});
+    }
+    return solutions;
+}
+
+function init_game(){
+   open_help();
+   load_options();
+
+   $( "#letters_range" ).html( options.min_letters + " - " + options.max_letters );
+   $("#letters_slider" ).slider({
+     range: true,
+     min: 2,
+     max: 9,
+     step: 1,
+     values: [ options.min_letters, options.max_letters ],
+     slide: function( event, ui ) {
+       options.min_letters=ui.values[0];
+       options.max_letters=ui.values[1];
+       $( "#letters_range" ).html( ui.values[ 0 ] + " - " + ui.values[ 1 ] );
+       save_options();
+     }});
+}
+
+function stop_game() {
+   $(".start").show();
+   $(".stop").hide();
+   $(".opt").show();
+   $(".help").show();
+   $("#options").hide();
+   $("#discover").hide();
+   $("#game").hide();
+   
+   var words_total_by_length={};
+   var words_found_by_length={};
+
+   for (var length=options.min_letters; length<=options.max_letters; length++) {
+     words_total_by_length[length]=0;
+     words_found_by_length[length]=0;
+     $("<div></div>").attr("class", "resp").attr('id', 'responses'+length).appendTo("#responses");
+     $("<div></div>").attr("class", "words_title").html(length).appendTo("#responses"+length);
+     $("<div></div>").attr("class", "words_group").html("<span id='progression_words_found"+length+"'>0</span>/<span id='words_total"+length+"'>0</span>").appendTo("#responses"+length);
+   } 
+
+   for (var key in words) {
+     $("<div></div>").attr("class", "words_group").attr("id", "w_"+key).appendTo("#responses"+key.length);
+     var res_class="word not_found";
+     words_total_by_length[key.length]++;
+     if (responses.words[key] != null) {
+       res_class="word found";
+       words_found_by_length[key.length]++;
+     }
+     words[key].forEach(function(my_word){
+       $("<a></a>").attr("class", res_class).attr("target", "blank").attr("href", dictionaries[options.dictionary].definition_url.replace("[WORD]", my_word)).html(my_word).appendTo("#w_"+key);
+       $("<span></span>").html("<br/>").appendTo("#w_"+key);
+     });
+   }
+   for (var length=options.min_letters; length<=options.max_letters; length++) {
+     $("#words_total"+length).html(words_total_by_length[length]);
+     $("#words_found"+length).html(words_found_by_length[length]);
+   }
+   $("#responses").show();
+}
+
+function open_options() {
+   $("#intro").hide();
+   $("#responses").hide();
+   $(".opt").hide();
+   $(".help").show();
+   $(".start").show();
+   $(".stop").hide();
+   $("#options").show();
+}
+
+function start_game() {
+   load_dict();
+
+   $("#intro").hide();
+   $("#game").show();
+   $(".start").hide();
+   $(".stop").show();
+   $(".opt").hide();
+   $(".help").hide();
+   $("#options").hide();
+   $("#progression").html("");
+   $("#responses").html("");
+   $("#discover").show();
+   words={};
+   responses={
+     "words":{},
+     "size":{
+       "total":0
+     }
+   };
+   placed_letters={};
+   occuped_slots={};
+
+   // Ou utiliser current_dict.words[options.max_letters]
+   var word_index = parseInt(Math.random() * current_dict[options.max_letters].length);
+   var infos=current_dict[options.max_letters][word_index].split(" ");
+   var letters_str=infos[0];
+   letters=letters_str.toUpperCase().split("").shuffle();
+   solutions=find_solutions(letters);
+
+   $("#words_found").html(0);
+   $("#total_words").html(solutions.size.total);
+   for (var length=options.min_letters; length<=options.max_letters; length++) {
+     responses.size[length]=0;
+     $("<div></div>").attr("class", "resp").attr('id', 'progression'+length).appendTo("#progression");
+     $("<div></div>").attr("class", "words_title").html(length).appendTo("#progression"+length);
+     $("<div></div>").attr("class", "words_group").html("<span id='progression_words_found"+length+"'>0</span>/<span>"+solutions.size[length]+"</span>").appendTo("#progression"+length);
+
+   }
+
+   words=solutions.words;
+   console.debug(letters);
+   console.debug(words);
+   $("#tr_pile").html("");
+   $("#tr_slot").html("");
+   
+   for (var i=0; i<options.max_letters+2; i++) {
+     $('<td></td>').attr('id', 'pile'+i).attr('class', "mydrop").appendTo("#tr_pile");
+     $('<td></td>').attr('id', 'slot'+i).attr('class', "mydrop").appendTo("#tr_slot");
+   }
+
+   letter_size=parseInt(($("#game").width()-40)/(options.max_letters+2+1));
+   console.debug(letter_size);
+
+   for (var i=0; i<letters.length; i++) {
+     $('<div>'+letters[i]+'</div>').data('letter', letters[i]).attr('class', 'letter').attr('id', 'letter'+i).appendTo('#pile'+i).draggable({
+       containment:'#drop_table',
+       cursor: 'move',
+       revert: 'invalid'
+     });
+     occuped_slots['pile'+i]='letter'+i;
+     placed_letters['letter'+i]='pile'+i;
+   }
+   $("#drop_table td").css("width", letter_size+"px");
+   $("#drop_table td").css("height", letter_size+"px");
+				     
+   $(".letter").css("width", letter_size+"px");
+   $(".letter").css("height", letter_size+"px");
+   $(".letter").css("font-size", (letter_size-4)+"px");
+   $(".letter").css("line-height", (letter_size-4)+"px");
+
+   $('.mydrop').droppable({
+       accept: function(e){
+         var letter_id=e.attr("id");
+         var slotId=$(this).attr("id");
+         return (occuped_slots[slotId]==null) ? true: false;
+       },
+       drop: handleLetterDrop,
+   });
+}
+
+function verify_letters_positions() {
+   ['pile', 'slot'].forEach(function(rang){
+     var current_word="";
+     var current_pos=[];
+     for (var i=0; i<options.max_letters+3; i++) {
+       var l=occuped_slots[rang+i];
+       if (l!=null && (m=l.match(/^letter(\d+)/))) {
+         current_word+=letters[m[1]];
+         current_pos.push(l);
+         //console.debug(current_word);
+       } else {
+         if (current_word.length>=options.min_letters) {
+	   verify_word(current_word, current_pos);
+         }
+         current_word="";
+         current_pos=[];
+       }
+     }
+   });
+}
+
+function verify_word(user_try, letters_places) {
+   //console.debug("verify "+user_try+" : "+letters_places);
+   user_try=strip_accents(user_try.toLowerCase());
+   if (words[user_try] != null) {
+      var color;
+      if (responses.words[user_try] == null) {
+         responses.words[user_try]=1;
+         responses.size[user_try.length]++
+         responses.size["total"]++
+         $("#words_found").html(responses.size["total"]);
+         $("#progression_words_found"+user_try.length).html(responses.size[user_try.length]);
+         color="#9C0";
+      } else {
+         color="#F90";
+      }
+      letters_places.forEach(function(letter){
+        $("#"+letter).css("background-color", color);
+      });
+      setTimeout(function(){$(".letter").css("background-color", "white")}, 500);
+   } else {
+     //console.debug("mot ko "+user_try);
+   }
+}
+
+function handleLetterDrop(e,ui) {
+   var slotId = $(this).attr('id');
+   var letter=ui.draggable.data('letter');
+   var letter_id=ui.draggable.attr('id');
+   if (placed_letters[letter_id] != null) {
+     //console.debug("authorise drop on slot "+placed_letters[letter_id]);
+     occuped_slots[placed_letters[letter_id]]=null;
+     placed_letters[letter_id]=null;
+   }
+
+   occuped_slots[slotId]=letter_id;
+   placed_letters[letter_id]=slotId;
+   //console.debug("block drop on slot "+slotId);
+   ui.draggable.position({of: $(this), my: 'left top', at: 'left top'});
+   verify_letters_positions();
+}
+
+
+
+	</script>
+    </body>
+</html>

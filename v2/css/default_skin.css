@@ -1,0 +1,29 @@
+body, a {
+    color: white;
+}
+
+.letter {
+    color: black;
+}
+
+
+.resp{
+    background-color: #EEEEEE;
+    border: 1px dotted black;
+    box-shadow: none;
+    color: black;
+}
+
+#menu {
+    background-color: #6393C1;
+    box-shadow: none;
+}
+
+.bonus {
+    color: #555555;
+}
+
+#content {
+    background-color: #555555;
+}
+
