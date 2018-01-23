@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width">
+
+	<script src="jquery-1.9.1.js"></script>
+	<script src="jquery-ui.js"></script>	
+
+	<script src="./jquery.cookie.js"></script>
+	<script src="./jquery.ui.touch-punch.min.js"></script>
+	<script src="./redips-drag-min.js"></script>
+	<script src="./purl.js"></script>
+	<script src="./jquery.qrcode.min.js"></script>
+	<script src="./jquery.plugin.min.js"></script>
+	<script src="./jquery.countdown.min.js"></script>
+
+	<link rel="stylesheet" href="font-awesome-4.0.3/css/font-awesome.css">
+        <link rel="stylesheet" href="css/normalize.min.css">
+        <link rel="stylesheet" href="css/main.css">
+	<link rel="stylesheet" href="jquery-ui.css">
+	<link rel="stylesheet" href="jquery.countdown.css">
+
+        <link rel="stylesheet" href="css/begglo.css" id="main_css">
+        <link rel="stylesheet" href="css/default_skin.css" id="skin_css">
+
+        <script src="js/vendor/modernizr-2.6.2.min.js"></script>
+     </head>
+     <body style="-moz-user-select: none;" unselectable="on">
+	 <!--[if lt IE 7]>
+	     <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+	 <![endif]-->
+         <div id="loading" style="display:none">
+           <div id="frame">
+             <p>Chargement en cours...</p>
+             <div id="progressbar"></div>
+           </div>
+	 </div>
+	 <div id="content">
+           <div id="links" style="display:none">
+              <div class="link">
+                Lien sans lettres<br/>
+	        <a id="url" href=""></a><br/>
+                <div id="qrcode"></div>
+              </div>
+              <div class="link" id="link_with_letters">
+                Lien avec les lettres <span id="link_letters"></span><br/>
+	        <a id="url_with_letters" href=""></a><br/>
+                <div id="qrcode_with_letters"></div>
+              </div>
+	   </div>
+	   <div id="options" style="display:none">
+	       Dictionnaire : <select id="dictionary_select"></select><br/>
+	       <label for="letters_range">Nombre de lettres : <span id="letters_range"></span></label>
+  	       <div id="letters_slider"></div><br/>
+               <label for="dyslexic_checkbox">Police spéciale dyslexie : <input type="checkbox" id="dyslexic_checkbox"/></label><br/>
+               Gestion du temps : <select id="time_management_select"><option value="countdown">Compte à rebours</option><option value="countup">Chronomètre</option></select><br/>
+               Thème: <select id="themes_select"><option value="default">Par défaut</option><option value="gradient">Dégradé</option></select><br/>
+	       Nombre de cases en plus : <select id="empty_places_select"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select><br/>
+	       Forcer les prochaines lettres : <input type="text" size="12" id="next_letters_input"/><br/>
+           </div>
+	   <div id="intro" style="display:none">
+             <h1>BEGGLO</h1>
+	     <p>Démarrer une partie en appuyant sur le bouton <i class="start fa fa-play"></i></p>
+	     <p>Déplacer les lettres afin de trouver le plus de mots</p>
+	     <p>Paramétrer le jeu via la page <i class="opt fa fa-cog"></i></p>
+	   </div>
+	   <div id="drag">
+	     <table id="drop_table">
+               <tr id="tr_pile"></tr>
+               <tr id="tr_slot"></tr>
+	     </table>
+             <div id="progression"></div>
+	   </div>
+           <div id="responses" style="display:none">
+           </div>
+	 </div>
+	 <div id="menu">
+           <div>
+             <div id="countdown_div"></div><div class="bonus" id="countdown_bonus_div"></div>
+             <div id="points_div"></div><div class="bonus" id="points_bonus_div"></div>
+  	     <div class="start button fa fa-play fa-2x" title="Démarrer la partie"></div>
+	     <div class="stop button fa fa-stop fa-2x" style="display: none" title="Arrêter la partie"></div>
+	     <div class="opt button fa fa-cog fa-2x" title="Options"></div>
+	     <div class="help button fa fa-question-circle fa-2x" style="display: none" title="Aide"></div>
+	     <div class="share button fa fa-qrcode fa-2x" style="display: none" title="Partager"></div>
+	   </div>
+	 </div>
+	<script language="JavaScript">
+$("body").attr('unselectable','on').css('MozUserSelect','none');
+
+var options={
+   "dictionary" : "fr",
+   "dyslexic_font" : 0,
+   "min_letters" : 3,
+   "max_letters" : 5,
+   "empty_places" : 1,
+   "time_management" : "countdown",
+   "next_letters" : "",
+   "skin" : "default",
+   "auto_start" : 0,
+};
+var default_options=$.extend({}, options);
+
+var dictionaries={
+   "fr" : {
+     "file" : "dict.fr.json",
+     "definition_url" : "http://fr.wiktionary.com/wiki/[WORD]",
+     "source" : "package hunspell-dictionary-fr sur Ubuntu",
+     "label": "Français"
+   },
+   "en_GB" : {
+     "file" : "dict.en_GB.json",
+     "definition_url" : "http://en.wiktionary.com/wiki/[WORD]",
+     "source" : "package hunspell-dictionary-en sur Ubuntu",
+     "label": "Anglais"
+   }
+};
+var letter_size;
+
+redips_init = function () {
+	// reference to the REDIPS.drag library
+	var rd = REDIPS.drag;
+	// initialization
+	rd.init();
+        rd.hover.colorTd="#6393C1",
+	// set drop option to "shift"
+	rd.dropMode = 'shift';
+	rd.shift.mode = 'horizontal2';
+//	rd.shift.after = 'always';
+        rd.shift.overflow = 'source';
+	// enable animation on shifted elements
+	rd.animation.shift = true;
+	// set animation loop pause
+	rd.animation.pause = 20;
+	// do not ask on delete
+	rd.trash_ask = false;
+        rd.event.dropped = function (tc) {
+          //var json=rd.saveContent('drop_table',"json");
+          verify_letters_positions()
+          //console.debug(json);
+        };
+};
+
+window.onload = function() {
+  $("body").attr('unselectable','on').css('MozUserSelect','none');
+  $(window).resize(function(){
+//    $('#main_css').attr("href","css/begglo.css?v="+Math.random(0,10000));
+    resize_letters();
+  });
+
+  $.each(dictionaries, function(language_id, parameters) {
+     $("#dictionary_select").append($('<option>', {
+	    value: language_id,
+	    text: parameters.label
+     }));
+  });
+
+  $("#dictionary_select").change(function(){
+     options.dictionary=$("#dictionary_select").val();
+     save_options();
+  });
+  $("#time_management_select").change(function(){
+     options.time_management=$("#time_management_select").val();
+     save_options();
+  });
+  $("#themes_select").change(function(){
+     options.skin=$("#themes_select").val();
+     $('#skin_css').attr("href","css/"+options.skin+"_skin.css");
+     save_options();
+  });
+  $("#empty_places_select").change(function(){
+     options.empty_places=parseInt($("#empty_places_select").val());
+     save_options();
+     console.debug("change empty_places : "+options.empty_places);
+  });
+
+  $("#dyslexic_checkbox").change(function(){
+     if (this.checked) {
+       options.dyslexic_font=1;
+     } else {
+       options.dyslexic_font=0;
+     }
+     save_options();
+     change_font();
+  });
+
+  $("#next_letters_input").keyup(function(){
+     options.next_letters=$(this).val();
+     options.max_letters=options.next_letters.length;
+  });
+  init_game();
+}
+
+function start_loading(){
+   $("#progressbar").progressbar({ value: false });
+   $("#loading").show();
+}
+
+function stop_loading(){
+   $("#loading").hide();
+}
+
+function change_font(){
+   if (options.dyslexic_font) {
+     console.debug("font opendyslexic");
+     $("body").css("font-family", "opendyslexic");
+   } else {
+     console.debug("font fa");
+     $("body").css("font-family", "fa");
+   }
+}
+
+$(".start").click(start_game);
+$(".stop").click(stop_game);
+$(".help").click(open_help);
+$(".opt").click(open_options);
+$(".share").click(function(){
+  $(".start").show();
+  $(".stop").hide();
+  $(".opt").show();
+  $(".help").show();
+  $(".share").hide();
+
+  $("#options").hide();
+  $("#responses").hide();
+  $("#drag").hide();
+  $("#intro").hide();
+  var url=document.location.protocol+"//"+document.location.host+document.location.pathname;
+  $("#link_with_letters").hide();
+
+  if (url.match(/^file:/))
+     url="http://fr.orange-pagesperso.pagesperso-orange.fr/begglo/v2/index.html";
+  $('#qrcode').html("");
+  $("#url").html("");
+
+  var params=["auto_start=1"];
+  for (key in default_options) {
+    console.debug(options[key]+"!="+default_options[key]);
+    if (key != "next_letters" && key != "auto_start" && options[key]!=default_options[key]) {
+      params.push(key+"="+options[key]);
+    }
+  }
+  url+="?"+params.join("&");
+  console.debug(url);
+  var url_without_letters=url;
+  $.ajax({
+    dataType: "json",
+    url: "https://api-ssl.bitly.com/v3/shorten",
+    data: {
+      access_token:"85868f7299927bdfad154d52237d026a1db70e14",
+      longUrl:url_without_letters
+    },
+    cache: false,
+    async: false,
+    success: function(json) {
+      if (json.status_code==200)
+        url_without_letters=json.data.url;
+  }});
+  $('#qrcode').qrcode(url_without_letters);
+  $("#url").html(url_without_letters).attr("href", url_without_letters);
+
+  $('#qrcode_with_letters').html("");
+  $("#url_with_letters").html("");
+  var final_letters;
+  if (letters!=null)
+    final_letters=letters.join("");
+  if (options.next_letters!=null && options.next_letters != "")
+    final_letters=options.next_letters;
+
+   
+  if (final_letters!=null) {
+    $("#link_letters").html(final_letters);
+    var url_with_letters=url+"&next_letters="+final_letters;
+    console.debug(url_with_letters);
+    $.ajax({
+      dataType: "json",
+      url: "https://api-ssl.bitly.com/v3/shorten",
+      data: {
+        access_token:"85868f7299927bdfad154d52237d026a1db70e14",
+        longUrl:url_with_letters
+      },
+      cache: false,
+      async: false,
+      success: function(json) {
+        if (json.status_code==200)
+          url_with_letters=json.data.url;
+    }});
+    $('#qrcode_with_letters').qrcode(url_with_letters);
+    $("#url_with_letters").html(url_with_letters).attr("href", url_with_letters);
+    $("#link_with_letters").show();
+  }
+
+  $("#links").show();
+});
+
+function open_help() {
+   $(".start").show();
+   $(".stop").hide();
+   $(".opt").show();
+   $(".help").hide();
+   $(".share").hide();
+
+   $("#options").hide();
+   $("#responses").hide();
+   $("#drag").hide();
+   $("#links").hide();
+   $("#intro").show();
+}
+
+function strip_accents(s) {
+  var translate = {
+    "à":"a","á":"a","â":"a","ã":"a","ä":"a","å":"a","ç":"c","è":"e","é":"e","ê":"e","ë":"e","ì":"i","í":"i","î":"i","ï":"i","ñ":"n","ò":"o","ó":"o","ô":"o","õ":"o","ö":"o","ù":"u","ú":"u","û":"u","ü":"u","ý":"y","ÿ":"y"
+  };
+  var translate_re = /[àáâãäåçèéêëìíîïñòóôõöùúûüýÿ]/g;
+  return ( s.replace(translate_re, function(match) { 
+    return translate[match]; 
+  }) );
+}
+
+
+var placed_letters={};
+var occuped_slots={};
+var letters;
+var current_dict={};
+var responses={};
+var solutions={};
+var words={};
+$.cookie.json = true;
+
+var dict_loaded=0;
+
+function save_options() {
+  console.debug("save option in cookie");
+  options.auto_start=0;
+  options.auto_stop=0;
+  options.next_letters="";
+  $.cookie("begglo_options", options);
+}
+
+function load_options() {
+  var cookie_options=$.cookie("begglo_options");
+  if (cookie_options==null)
+    cookie_options={};
+  var url_options=$.url(document.location);
+  if (url_options==null)
+    url_options={};
+  
+  for (key in default_options) {
+      value=options[key];
+      if (cookie_options[key] != null) {
+        console.debug("use cookie option "+key+" : "+value);
+        value=cookie_options[key];
+      }
+      if (url_options.param(key) != null) {
+        value=url_options.param(key);
+        console.debug("use url option "+key+" : "+value);
+      }
+      if (value!=null && typeof value !== "number" && value.match(/^\d+$/)) {
+        value=parseInt(value);
+      }
+
+      options[key]=value;
+  }
+  if (options.next_letters != null && options.next_letters !="") {
+     options.max_letters=options.next_letters.length;
+  }
+  console.debug(options);
+}
+
+function load_dict() {
+   //console.debug("load dict."+options.dictionary+".json");
+   console.debug(dictionaries[options.dictionary].file);
+   if (current_dict == null || current_dict.lang != options.dictionary) {
+     console.debug("load dict "+options.dictionary);
+     $.ajax({
+       dataType: "json",
+       url: dictionaries[options.dictionary].file,
+       async: false,
+       success: function(data) {
+         current_dict=data;
+       }});
+   }
+   var downloaded_size=0;
+   var prevision_size=0;
+   var threads=[];
+   for (var i=options.min_letters; i<=options.max_letters; i++) {
+       if (current_dict[i]==null) {
+         prevision_size+=current_dict.words[i]*(i*2+4)*1.023;
+       }
+   }
+   $("#progressbar").progressbar({ max: prevision_size });
+   for (var i=options.min_letters; i<=options.max_letters; i++) {
+       if (current_dict[i]==null) {
+         console.debug("start download for file "+i+" words");
+         var async= $.ajax({
+           dataType: "json",
+           cache: true,
+           words_length: i,
+           url: current_dict.lang+"/"+i+".json",
+           async: false,
+           success: function(data) {
+             var i = this.words_length;
+             downloaded_size+=current_dict.words[i]*(i*2+4)*1.023;
+             console.debug("file "+i+" words downloaded : "+downloaded_size);
+             $( "#progressbar" ).progressbar({ value: downloaded_size });
+             current_dict[i]=data;
+           }
+         });
+         threads.push(async);
+       }
+   }
+   stop_loading();
+
+   console.debug(prevision_size);
+   console.debug(current_dict);
+}
+
+function find_solutions(letters) {
+    var solutions={
+      "words":{},
+      "size":{
+        "total":0
+      }
+    };
+    words={};
+    var re=new RegExp("^"+letters.sort().join("?")+"?$", "i");
+    console.debug(options.min_letters+" : "+options.max_letters);
+    for (var length=options.min_letters; length<=options.max_letters; length++) {
+        solutions.size[length]=0;
+        var lines=current_dict[length];
+        lines.forEach(function(line) {
+            if (line.substring(0, length).match(re)) {
+	        var word=line.substring(length+1);
+                var key=strip_accents(word);
+		if (solutions.words[key] == null) {
+                    solutions.size[length]++;
+                    solutions.size["total"]++;
+                    solutions.words[key]=[];
+                }
+                solutions.words[key].push(word);
+	    }
+	});
+    }
+    return solutions;
+}
+
+function init_game(){
+   open_help();
+   load_options();
+
+   change_font();
+   $("#skin_css").attr("href","css/"+options.skin+"_skin.css");
+   $("#themes_select option[value="+options.skin+"]").attr("selected", "selected");
+   $("#time_management_select option[value="+options.time_management+"]").attr("selected", "selected");
+   $("#empty_places_select option[value="+options.empty_places+"]").attr("selected", "selected");
+
+   $("#letters_range" ).html( options.min_letters + " - " + options.max_letters );
+   $("#letters_slider" ).slider({
+     range: true,
+     min: 2,
+     max: 15,
+     step: 1,
+     values: [ options.min_letters, options.max_letters ],
+     slide: function( event, ui ) {
+       options.min_letters=ui.values[0];
+       options.max_letters=ui.values[1];
+       $( "#letters_range" ).html( ui.values[ 0 ] + " - " + ui.values[ 1 ] );
+       save_options();
+   }});
+
+   $("#countdown_div").countdown({
+     layout: '{mnn}:{snn}',
+     alwaysExpire: false,
+   });
+
+   if (options.auto_start || options.auto_stop) {
+     start_game();
+   }
+   if (options.auto_stop) {
+     stop_game();
+   }
+
+}
+
+function resize_letters(){
+   console.debug(options.max_letters);
+   console.debug(options.empty_places);
+   
+   letter_size=parseInt(($("#drag").width())/(options.max_letters+options.empty_places+1));
+   $("#drop_table td").css("width", letter_size+"px");
+   $("#drop_table td").css("height", letter_size+"px");
+				     
+   $(".letter").css("width", letter_size*0.9+"px");
+   $(".letter").css("height", letter_size*0.9+"px");
+   $(".letter").css("font-size", (letter_size*0.8)+"px");
+   $(".letter").css("line-height", (letter_size*0.8)+"px");
+   if ($(window).width()<$(window).height()) {
+     //$(".button").css("display", "inline-block");
+   } else {
+     //$(".button").css("display", "block");
+   }
+}
+
+function stop_game() {
+   start_loading();
+
+   $(".start").show();
+   $(".stop").hide();
+   $(".opt").show();
+   $(".help").show();
+   $(".share").show();
+
+   $("#options").hide();
+   $("#drag").hide();
+   $("#links").hide();
+
+   if (options.time_management == "countdown") {
+     $("#countdown_div").countdown("lap");
+   } else {
+     $("#countdown_div").countdown("pause");
+   }
+
+   var words_total_by_length={};
+   var words_found_by_length={};
+
+   for (var length=options.min_letters; length<=options.max_letters; length++) {
+     words_total_by_length[length]=0;
+     words_found_by_length[length]=0;
+     $("<div></div>").attr("class", "resp").attr('id', 'responses'+length).appendTo("#responses");
+     $("<div></div>").attr("class", "words_title").html(length).appendTo("#responses"+length);
+     $("<div></div>").attr("class", "words_group").html("<span id='words_found"+length+"'>0</span>/<span id='words_total"+length+"'>0</span>").appendTo("#responses"+length);
+   } 
+
+   for (var key in words) {
+     $("<div></div>").attr("class", "words_group").attr("id", "w_"+key).appendTo("#responses"+key.length);
+     var res_class="word not_found";
+     words_total_by_length[key.length]++;
+     if (responses.words[key] != null) {
+       res_class="word found";
+       words_found_by_length[key.length]++;
+     }
+     words[key].forEach(function(my_word){
+       $("<a></a>").attr("class", res_class).attr("target", "blank").attr("href", dictionaries[options.dictionary].definition_url.replace("[WORD]", my_word)).html(my_word).appendTo("#w_"+key);
+       $("<span></span>").html("<br/>").appendTo("#w_"+key);
+     });
+   }
+   for (var length=options.min_letters; length<=options.max_letters; length++) {
+     $("#words_total"+length).html(words_total_by_length[length]);
+     $("#words_found"+length).html(words_found_by_length[length]);
+   }
+   stop_loading();
+
+   $("#responses").show();
+}
+
+function open_options() {
+   $(".start").show();
+   $(".stop").hide();
+   $(".opt").hide();
+   $(".help").show();
+   $(".share").show();
+
+   $("#intro").hide();
+   $("#responses").hide();
+   $("#links").hide();
+   
+   if (options.dyslexic_font) {
+      $("#dyslexic_checkbox").prop("checked", true);
+   } else {
+      $("#dyslexic_checkbox").prop("checked", false);
+   }      
+
+   $("#options").show();
+}
+
+function start_game() {
+   start_loading();
+   load_dict();
+
+   $(".stop").show();
+   $(".opt").hide();
+   $(".help").hide();
+   $(".share").hide();
+   $(".start").hide();
+
+   $("#intro").hide();
+   $("#drag").show();
+   $("#options").hide();
+   $("#links").hide();
+   $("#progression").html("");
+   $("#responses").html("");
+
+   if (options.time_management == "countdown") {
+     var new_date=new Date();
+     new_date.setTime(new_date.getTime() + 60*1000);
+     $("#countdown_div").countdown("lap");
+     $("#countdown_div").countdown('option', {until: new_date, since: null, onExpiry: stop_game});
+     $("#countdown_div").countdown('resume');
+   } else {
+     $("#countdown_div").countdown("pause");
+     $("#countdown_div").countdown('resume');
+     var new_date=new Date();
+     $("#countdown_div").countdown('option', {until: null, since: 0, onExpiry: null});
+   }
+
+   words={};
+   responses={
+     "words":{},
+     "size":{
+       "total":0
+     }
+   };
+   placed_letters={};
+   occuped_slots={};
+
+   // Ou utiliser current_dict.words[options.max_letters]
+   var word_index = parseInt(Math.random() * current_dict[options.max_letters].length);
+   var infos=current_dict[options.max_letters][word_index].split(" ");
+   var letters_str=infos[0];
+   if (options.next_letters!=null && options.next_letters!="")  {
+     letters_str=options.next_letters;
+   }
+
+   options.next_letters=null;
+   $("#next_letters_input").val("");
+   console.debug(letters_str);
+   letters=letters_str.toUpperCase().split("");
+   solutions=find_solutions(letters);
+   stop_loading();
+   letters=letters.sort(function() { return 0.5 - Math.random() });
+   for (var length=options.min_letters; length<=options.max_letters; length++) {
+     responses.size[length]=0;
+     $("<div></div>").attr("class", "resp").attr('id', 'progression'+length).appendTo("#progression");
+     $("<div></div>").attr("class", "words_title").html(length).appendTo("#progression"+length);
+     $("<div></div>").attr("class", "words_group").html("<span id='progression_words_found"+length+"'>0</span>/<span>"+solutions.size[length]+"</span>").appendTo("#progression"+length);
+   }
+
+   responses.size[length]=0;
+   $("<div></div>").attr("class", "resp").attr('id', 'progression_all').appendTo("#progression");
+   $("<div></div>").attr("class", "words_title").html(options.min_letters+".."+options.max_letters).appendTo("#progression_all");
+   $("<div></div>").attr("class", "words_group").html("<span id='progression_all_words_found'>0</span>/<span>"+solutions.size.total+"</span>").appendTo("#progression_all");
+   
+   words=solutions.words;
+   console.debug(letters);
+   console.debug(words);
+   $("#tr_pile").html("");
+   $("#tr_slot").html("");
+   console.debug("empty place : "+options.empty_places);
+   for (var i=0; i<options.max_letters+options.empty_places; i++) {
+     $('<td></td>').attr('id', 'pile'+i).appendTo("#tr_pile");
+     $('<td></td>').attr('id', 'slot'+i).appendTo("#tr_slot");
+   }
+
+   for (var i=0; i<letters.length; i++) {
+     $('<div>'+letters[i]+'</div>').data('letter', letters[i]).attr('class', 'letter drag').attr('id', 'letter'+i).appendTo('#pile'+i);
+   }
+   redips_init();
+   resize_letters();
+   verify_letters_positions();
+}
+
+function verify_letters_positions() {
+   ['pile', 'slot'].forEach(function(rang){
+     var current_word="";
+     var current_pos=[];
+     for (var i=0; i<options.max_letters+options.empty_places+1; i++) {
+       var l=$("#"+rang+i).children()[0];
+       if (l!=null) {
+         current_word+=$(l).html();
+         current_pos.push($(l).attr("id"));
+       } else {
+         if (current_word.length>=options.min_letters) {
+	   verify_word(current_word, current_pos);
+         }
+         current_word="";
+         current_pos=[];
+       }
+     }
+   });
+}
+
+function verify_word(user_try, letters_places) {
+   //console.debug("verify "+user_try+" : "+letters_places);
+   user_try=strip_accents(user_try.toLowerCase());
+   if (words[user_try] != null) {
+      var color;
+      if (responses.words[user_try] == null) {
+         //console.debug($("#countdown_div").countdown('option', 'until'));
+         var countdown_bonus=0;
+         countdown_bonus=user_try.length;
+         if (options.time_management == "countdown" && countdown_bonus) {
+            var new_date=new Date();
+            new_date.setTime($("#countdown_div").countdown('option', 'until').getTime() + countdown_bonus*1000);
+            $("#countdown_div").countdown('option', {until: new_date});
+            $("#countdown_bonus_div").html("+"+countdown_bonus+"s").fadeIn(400).delay(400).fadeOut(400);
+         }
+         responses.words[user_try]=1;
+         responses.size[user_try.length]++;
+         responses.size["total"]++;
+         $("#progression_all_words_found").html(responses.size["total"]);
+         $("#progression_words_found"+user_try.length).html(responses.size[user_try.length]);
+         color="#9C0";
+      } else {
+         color="#F90";
+      }
+      letters_places.forEach(function(letter){
+        $("#"+letter).css("background-color", color);
+      });
+      setTimeout(function(){$(".letter").css("background-color", "white")}, 500);
+      if(responses.size["total"]==solutions.size.total) {
+	stop_game();
+      }
+   } else {
+     //console.debug("mot ko "+user_try);
+   }
+}
+
+function handleLetterDrop(e,ui) {
+   var slotId = $(this).attr('id');
+   var letter=ui.draggable.data('letter');
+   var letter_id=ui.draggable.attr('id');
+   if (placed_letters[letter_id] != null) {
+     //console.debug("authorise drop on slot "+placed_letters[letter_id]);
+     occuped_slots[placed_letters[letter_id]]=null;
+     placed_letters[letter_id]=null;
+   }
+
+   occuped_slots[slotId]=letter_id;
+   placed_letters[letter_id]=slotId;
+   //console.debug("block drop on slot "+slotId);
+   ui.draggable.position({of: $(this), my: 'left top', at: 'left top'});
+   verify_letters_positions();
+}
+
+
+
+	</script>
+    </body>
+</html>

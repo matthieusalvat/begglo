@@ -1,0 +1,867 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Begglo</title>
+<script type="text/javascript" src="redips-drag-min.js"></script>
+<script type="text/javascript" src="jquery-1.9.1.js"></script>
+<script type="text/javascript" src="jquery.cookie.js"></script>
+<script language="JavaScript">
+
+var dictionaries={
+  "ca" : {
+     "file" : "dict.ca.json",
+     "definition_url" : "http://ca.wiktionary.com/wiki/[WORD]",
+     "source" : "ispell catalan Ubuntu package icatalan  0.6-12",
+     "label": "Catalan"
+  },
+  "fr" : {
+     "file" : "dict.fr.json",
+     "definition_url" : "http://fr.wiktionary.com/wiki/[WORD]",
+     "source" : "package hunspell-dictionary-fr sur Ubuntu. Après filtrage (mots composés, prénom, unité de mesure ...) il contient 10583 mots (559 de 3 lettres, 2324 de 4 lettres et 7700 de 5 lettres).",
+     "label": "Français"
+  },
+  "fr-TV" : {
+     "file" : "dict-TV.fr.json",
+     "definition_url" : "http://fr.wiktionary.com/wiki/[WORD]",
+     "source" : "source 'toutes variantes' de <a href='http://www.dicollecte.org/documentation.php?prj=fr'>http://www.dicollecte.org/documentation.php?prj=fr</a> : 314 mots de 3 lettres, 1102 mots de 4 lettres et 2886 mots de 5 lettres.",
+     "label": "Français TV"
+  },
+  "fr-MIX" : {
+     "file" : "dict-MIX.fr.json",
+     "definition_url" : "http://fr.wiktionary.com/wiki/[WORD]",
+     "source" : "Mix des dictionnaires 'fr' et 'fr-TV' :  586 mots de 3 lettres, 2437 mots de 4 lettres et 7967 mots de 5 lettres",
+     "label": "Français MIX"
+  },
+  "de" : {
+     "file" : "dict.de.json",
+     "definition_url" : "http://de.wiktionary.com/wiki/[WORD]",
+     "label": "Allemand"
+  },
+  "br" : {
+     "file" : "dict.br.json",
+     "definition_url" : "http://www.agencebretagnepresse.com/cgi-bin/dico.cgi?dico=breton&key=[WORD]",
+     "label": "Breton"
+  },
+  "en" : {
+     "file" : "dict.en.json",
+     "definition_url" : "http://en.wiktionary.com/wiki/[WORD]",
+     "label": "Anglais"
+  },
+  "us" : {
+     "file" : "dict.us.json",
+     "definition_url" : "http://en.wiktionary.com/wiki/[WORD]",
+     "label": "Américain"
+  },
+  "it" : {
+     "file" : "dict.it.json",
+     "definition_url" : "http://it.wiktionary.com/wiki/[WORD]",
+     "label": "Italien"
+  },
+  "sp" : {
+     "file" : "dict.sp.json",
+     "definition_url" : "http://es.wiktionary.com/wiki/[WORD]",
+     "label": "Espagnol"
+  }
+};
+
+Array.prototype.shuffle = function() {
+var s = [];
+while (this.length) s.push(this.splice(Math.random() * this.length, 1)[0]);
+while (s.length) this.push(s.pop());
+return this;
+};
+
+Object.size = function(obj) {
+    var size = 0, key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
+}
+</script>
+<meta name="viewport" content="width=device-width">
+<style type="text/css"> 
+
+table {
+  padding: 5px;
+  width:100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+th {
+  text-align: center;
+  border: 1px solid navy;
+  background-color: #eee;
+}
+
+td {
+  text-align: left;
+  vertical-align: top;
+  border: 1px solid navy;
+  background-color: white;
+}
+
+/* table */
+div#drag table {
+   background-color: #eee;
+   border-collapse: collapse;
+   margin: 7px;
+}
+
+/* table cells */
+div#drag td{
+  text-align: center;
+  border: 1px solid navy;
+  background-color: #eee;
+  vertical-align: middle;
+  border: 1px solid navy;
+  height: 70px;
+  width: 70px;
+  text-align: center;
+  padding: 2px;
+}
+
+/* table */
+div#try table {
+   background-color: #eee;
+   border-collapse: collapse;
+   margin: 7px;
+}
+
+/* table cells */
+div#try td{
+	border: 1px solid navy;
+	height: 70px;
+	width: 70px;
+	text-align: center;
+	padding: 2px;
+}
+
+
+/* drag object (DIV inside table cell) */
+.drag{
+	margin: auto;
+	text-align: center;
+	width: 60px;
+	height: 60px;
+	line-height: 60px;
+	border: 2px solid SteelBlue;
+	background-color: white;
+	/* round corners */
+	border-radius: 8px; /* Opera, Chrome */
+	-moz-border-radius: 8px; /* FF */
+}
+
+/* make drag container visible */
+#drag{
+	border: none;
+	display: table;
+//	margin: auto;
+}
+
+/* space between radio/checkbox and text */
+div#drag input {
+	margin-right: 10px;
+}
+
+.ko {
+color: #F90;
+}
+
+a {
+ color: SteelBlue;
+}
+
+.ok {
+color: SteelBlue;
+}
+
+.pointer{
+  cursor:  pointer;
+}
+
+#options_div {
+     display: none;
+     width:100%;
+     height:100%;
+     text-align:center;
+     z-index: 1000;
+}
+
+#options_div table {
+     width:100%;
+     background-color: #fff;
+     border-collapse: collapse;
+     padding:15px;
+     text-align:left;
+}
+
+#options_div td {
+     border: 0px solid white;
+     text-align:left;
+}
+
+.buttons td {
+     width:50%;
+     text-align:center;
+}
+
+html {-webkit-text-size-adjust: 70%;} 
+
+body {-webkit-text-size-adjust: 70%;} 
+
+.center {
+   text-align: center;
+}
+
+.small {width: 15%;}
+
+.big {width: 40%;}
+
+img {
+  border:0px;
+  height: 30px;
+}
+
+
+#result_message {
+   width: 100%;
+   text-align: center;
+   margin-top: 5px;
+   margin-bottom: 5px;
+   font-size: +2em;
+}
+
+#count{
+  height:10px;
+}
+
+h2{
+  text-align: center;
+  background-color: #eee;
+  border: 1px solid navy;
+}
+</style>
+</head>
+<body style="-moz-user-select: none;" unselectable="on" onload="REDIPS.drag.init()">
+
+<div id="game_div">
+<table id="menu">
+   <tbody><tr>
+    <th id="start_game_link" onclick="javascript:start_game();" class="small pointer"><img id="start_game_img" src="./images/start_on.png"></th>
+    <th id="stop_game_link" class="small"><img id="stop_game_img" src="./images/stop_off.png"></th>
+    <th class="big"><span id="language">Français</span> <span id="points">0</span>/<span id="total">?</span> - <span id="countdown">??s</span></th>
+    <th onclick="open_infos();" class="small pointer"><img src="./images/help.png"></th>
+    <th onclick="open_options();" class="small pointer"><img src="./images/options.png"></th>
+  </tr>
+</tbody></table>
+
+<div id="touch_div" style="">
+  <div id="drag">
+    <table id="letters">
+      <tbody><tr id="letters">
+        <td></td>
+        <td><div class="drag" id="l0">?</div></td>
+        <td><div class="drag" id="l1">?</div></td>
+        <td><div class="drag" id="l2">?</div></td>
+        <td><div class="drag" id="l3">?</div></td>
+        <td><div class="drag" id="l4">?</div></td>
+        <td></td>
+      </tr>
+    </tbody></table>
+  <div style="height: 1px; width: 1px;" id="redips_clone"></div></div>
+</div>
+
+<div id="keyboard_div" style="display:none">
+  <table id="try">
+    <tbody>
+    <tr>
+      <td></td>
+      <td><div class="drag" id="t0">?</div></td>
+      <td><div class="drag" id="t1">?</div></td>
+      <td><div class="drag" id="t2">?</div></td>
+      <td><div class="drag" id="t3">?</div></td>
+      <td><div class="drag" id="t4">?</div></td>
+      <td></td>
+    </tr>
+    </tbody>
+  </table>
+  <input id="user_try" size="5" onkeypress="searchKeyPress(event);" type="text">
+  <span id="message"></span><br>
+</div>
+
+<table id="responses" style="display:none">
+  <tbody><tr>
+    <th><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"></th><th><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"></th><th><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"></th>
+  </tr>
+    <tr><td id="responses3"></td><td id="responses4"></td><td id="responses5"></td>
+  </tr>
+</tbody></table>
+
+<div id="solutions" style="display:none">
+<div id="result_message"></div>
+<table>
+  <tbody><tr>
+    <th><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"></th><th><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"></th><th><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"><img src="./images/letter.png"></th>
+   </tr>
+    <tr><td id="solutions3"></td><td id="solutions4"></td><td id="solutions5"></td>
+  </tr>
+</tbody></table>
+</div>
+<a style="float: right" href="" onclick="open_infos();return false;">version 1.0.1</a>
+<img id="count"  src="http://pages.perso.orange.fr/php/compteur.php?url=fr.orange-pagesperso&df=begglo&dd=E&frgb=noir&ft=0&tr=Oui&pad=Oui&comma=Non" />
+</div>
+
+<div id="infos_div" style="display:none">
+<h2>Comment jouer ?</h2>
+<p>Il suffit de déplacer les lettres avec la souris (ou avec le doigt 
+sur les écrans tactiles) afin de trouver le plus de mot de 3 à 5 
+lettres. Par défaut (voir <a href="" onclick="open_options();return false;">les options</a>),
+ vous avez 60s pour trouver tous les mots possibles, à chaque mot de 5 
+lettres trouvé vous gagnez 10s de temps supplémentaire, 5s pour les 
+autres mots.</p><p>
+
+</p><h2>Historique des versions</h2>
+<b>Version 1.0.2</b> :<br> 
+<ul>
+<li>Ajout des dictionnaires fr-TV et fr-MIX pour faire des tests</li>
+</ul>
+
+<b>Version 1.0.1</b> :<br> 
+<ul>
+<li>Utilisation du dictionnaire Français Hunspell (package hunspell, hunspell-fr et hunspell-tools sur Debian/Ubuntu);</li>
+<li>Ajout de cette page d'informations</li>
+</ul>
+
+
+<h2>Informations sur les dictionnaires</h2>
+
+Les dictionnaires utilisée viennent principalement des packages ispell disponible dans les distributions GNU/Linux :<br>
+<div id="dict_infos">
+</div>
+
+<div style="text-align:center">
+<a href="" onclick="close_infos();return false;"><img src="./images/save.png"></a>
+</div>
+
+
+</div>
+<div id="password_div_" style="display:none">
+<table>
+<tr><td>Nombre de mots</td><td><input type="text" name="password_words_number" value="5"</td></tr>
+<tr><td>Nombre des lettres par mot</td><td><input type="text" name="password_words_number" value="5"</td></tr>
+</div>
+
+<div id="options_div">
+<h2>Options</h2>
+<table>
+<tbody><tr><td>Type de terminal</td><td>: <select id="mode_input"><option selected="selected" value="touch">Tactile/Souris</option><option value="keyboard" disabled="disabled">Clavier</option></select></td></tr>
+<tr><td>Dictionnaire</td><td>: <select id="dictionary_input"></select></td></tr>
+<tr><td>Afficher le nombre de solution</td><td>: <input value="1" id="view_solutions_number_input" checked="checked" type="checkbox"></td></tr>
+<tr><td>Limiter le temps</td><td>: <input value="1" id="timer_active_input" checked="checked" type="checkbox"></td></tr>
+<tr><td>Temps au départ</td><td>: <input size="3" id="init_timer_input" value="60" type="text">s</td></tr>
+<tr><td>Bonus de temps par mot trouvé</td><td>: <input size="3" id="word_found_bonus_input" value="5" type="text">s</td></tr>
+<tr><td>Bonus de temps par mot long trouvé</td><td>: <input size="3" id="max_word_found_bonus_input" value="10" type="text">s</td></tr>
+<tr><td>Utiliser ces lettres pour la prochaine partie</td><td>: <input size="5" id="force_letters_input" type="text"></td></tr>
+  <tr> 
+    <td style="text-align: left;;padding-left:10px"><a href="" onClick="close_options();return false;" ><img src="./images/cancel.png" /></a></td><td style="text-align: right;padding-right:10px"><a href="" onClick="save_options();return false;"><img src="./images/save.png" /></a></td>
+  </tr>
+</tbody></table>
+</div>
+
+<script language="JavaScript">
+var redips_init;
+var dict={};
+$("body").attr('unselectable','on').css('MozUserSelect','none');
+
+var options={
+   timer_active: true,
+   mode:"touch",
+   init_timer: 60,
+   word_found_bonus: 5,
+   dictionary: "fr",
+   view_solutions_number: true,
+   max_word_found_bonus: 10
+};
+
+function open_options(){
+   $("#game_div").hide();
+   $("#infos_div").hide();
+   $("#options_div").show();
+}
+
+function close_options(){
+   $("#options_div").hide();
+   $("#infos_div").hide();
+   $("#game_div").show();
+}
+
+function open_infos(){
+   $("#game_div").hide();
+   $("#infos_div").show();
+   $("#options_div").hide();
+   var html="<ul>";
+   $.each(dictionaries, function(language_id, language) {
+         if (language.source != null) 
+            html+="<li>"+language.label+" : "+language.source+"</li>"
+   });
+   html+="</ul>"
+   $("#dict_infos").html(html);
+
+}
+
+function close_infos(){
+   $("#options_div").hide();
+   $("#infos_div").hide();
+   $("#game_div").show();
+}
+
+function save_options() {
+     options.view_solutions_number=document.getElementById("view_solutions_number_input").checked ? 1 : 0;
+     options.timer_active=document.getElementById("timer_active_input").checked ? 1 : 0;
+     options.init_timer=document.getElementById("init_timer_input").value;
+     options.word_found_bonus=document.getElementById("word_found_bonus_input").value;
+     options.max_word_found_bonus=document.getElementById("max_word_found_bonus_input").value;
+     options.mode=$("#mode_input").val();
+
+     if (options.dictionary != $("#dictionary_input").val()) {
+        options.dictionary=$("#dictionary_input").val();
+        load_dict();
+     }
+
+
+     $("#touch_div").show();
+       if (options.mode == "touch") {
+          $("#keyboard_div").hide();
+     } else if (options.mode == "keyboard") {
+          $("#keyboard_div").show();
+          document.getElementById("user_try").focus();
+     }
+     var array_options=[]
+     for (option in options) {
+        array_options.push(option+":"+options[option]);
+     }
+    
+     //console.debug(array_options.join("&"));
+     $.cookie("options", array_options.join("&"), {expires : 365*10 });
+     //document.cookie="options="++"; expires=Sat, 1 Jan 2038 00:00:00 UTC; path=/";
+
+     force_letters=$("#force_letters_input").val();
+     $("#force_letters_input").val("");
+
+     close_options();
+}
+
+function load_options() {
+     $.each(dictionaries, function(language_id, language) {
+        //console.debug(language_id);
+        var selected=(language_id==options.dictionary) ? true : false;
+        $("#dictionary_input").append(new Option(language.label, language_id, selected, selected));
+     });
+     var options_str=$.cookie("options");
+     if (options_str != null && options_str !="") {
+       //console.debug(options_str);
+       options_str.split("&").forEach(function(line) {
+           var infos=line.split(":");
+           if (infos[1].match(/^\d+$/)) {
+             options[infos[0]]=parseInt(infos[1]);
+           } else {
+             options[infos[0]]=infos[1];
+           }
+       });
+       document.getElementById("view_solutions_number_input").checked=options.view_solutions_number;
+       document.getElementById("timer_active_input").checked=options.timer_active;
+       document.getElementById("init_timer_input").value=options.init_timer;
+       document.getElementById("word_found_bonus_input").value=options.word_found_bonus;
+       document.getElementById("max_word_found_bonus_input").value=options.max_word_found_bonus;
+      
+       $("#touch_div").show();
+       if (options.mode == "touch") {
+          $("#keyboard_div").hide();
+      } else if (options.mode == "keyboard") {
+          $("#keyboard_div").show();
+          document.getElementById("user_try").focus();
+      }
+      if (! options.timer_active) {
+        $("#countdown").css("color", "black");
+        $("#countdown").html("&#8734;");
+      }
+
+     }else {
+       //console.debug("erase cookie");
+       var cookies = document.cookie.split(";");
+       for (var i = 0; i < cookies.length; i++) {
+          var cookie = cookies[i];
+          var eqPos = cookie.indexOf("=");
+          var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        }
+       open_options();
+     }
+}
+
+var timer=60;
+var timeout;
+function tick() {
+    timer-=1;
+    $("#countdown").html(timer+"s");
+    $("#countdown").css("color", "black");
+    if (timer <= 10) {
+       $("#countdown").css("color", "red");
+       if (timer <= 0) {
+          stop_game('timeout');
+          return;
+       }
+    }
+
+    timeout=setTimeout("tick()", 1000);
+}
+
+// redips initialization
+redips_init = function () {
+	// reference to the REDIPS.drag library
+	var	rd = REDIPS.drag;
+	// initialization
+	rd.init();
+	// set drop option to "shift"
+	rd.drop_option = 'shift';
+	rd.shift_option = 'horizontal1';
+//	rd.shift_option = 'vertical1';
+	// enable animation on shifted elements
+	rd.animation_shift = false;
+	// set animation loop pause
+	rd.animation_pause = 20;
+	// do not ask on delete
+	rd.trash_ask = false;
+        rd.myhandler_dropped = function (tc) {
+        };
+};
+
+var last_width=0;
+function resize_letters_from_window_width() {
+   var window_width=$(window).width();
+   var window_height=$(window).height();;
+
+   if (Math.abs(last_width-window_width) < window_width/10) {
+	return;
+   }
+
+   last_width=window_width;
+   var letters_size=document.getElementById("letters").rows[0].cells.length+1;
+   if (window_width<window_height) 
+      letters_size++;
+				   
+   var letter_width=parseInt(window_width/letters_size);
+
+   //console.debug(letters_size+" cases à placer sur "+window_width+"px : "+letter_width);
+             var tbl = document.getElementById("letters");
+             for (var r = 0; r < tbl.rows.length; r++) {
+               for (var c = 0; c < tbl.rows[r].cells.length; c++) {
+                   var tbl_cell=tbl.rows[r].cells[c];
+                       tbl_cell.style.width=letter_width+"px";
+                       tbl_cell.style.height=letter_width+"px";
+                   if (tbl_cell.childNodes.length > 0) {
+                       for (var d = 0; d < tbl_cell.childNodes.length; d++) {
+                           var cn = tbl_cell.childNodes[d];
+                           if (cn.nodeName === 'DIV' && cn.className.indexOf('drag') > -1) {
+				 cn.style.width=parseInt(letter_width*0.80)+"px";
+				 cn.style.height=parseInt(letter_width*0.80)+"px";
+				 cn.style.lineHeight=parseInt(letter_width*0.70)+"px";
+				 cn.style.fontSize=parseInt(letter_width*0.70)+"px";				 
+                           }
+		       }
+                   }
+                }
+             }
+
+
+     var font_size=parseInt(window_width/window_height*8);
+     if (window_width<window_height) {
+          font_size=font_size*1.8;
+     }
+     REDIPS.drag.animation_step=font_size;
+     //console.debug("resize img");
+     $("img").each(function(index) {
+         if($(this)[0].id != "count")
+	     $(this).css("height", parseInt(letter_width/2)); 
+     });
+
+}
+
+document.body.onresize= function() {
+   resize_letters_from_window_width();
+}
+
+window.onload = function() {
+   resize_letters_from_window_width();
+   load_options();
+
+   load_dict();
+
+   if (options.mode==null || options.mode=="") 
+      options.mode="touch";
+
+   redips_init();
+}
+
+function load_dict() {
+   //console.debug("load dict."+options.dictionary+".json");
+   $.ajaxSetup({cache:false});
+
+   $.getJSON(dictionaries[options.dictionary].file, function(data) {
+      dict=data;
+   });
+
+   $("#language").html(dictionaries[options.dictionary].label);
+}
+
+function searchKeyPress(e) {
+    // look for window.event in case event isn't passed in
+    if (typeof e == 'undefined' && window.event) { e = window.event; }
+    if (e.keyCode == 13) {
+       var user_try=document.getElementById("user_try").value;
+       verify_word(user_try);       
+    }
+}
+
+function verify_word(user_try, letters_places) {
+   if (timer<=0) 
+      return;
+
+   user_try=strip_accents(user_try.toLowerCase());
+   var color="white";
+   if (words[user_try] != null) {
+      if (responses[user_try] == null) {
+         responses[user_try]=Object.size(responses[user_try]);
+         if (user_try.length==letters.length) {
+            timer+=parseInt(options.max_word_found_bonus);
+         } else {
+            timer+=parseInt(options.word_found_bonus);
+         }
+         document.getElementById("message").innerHTML="OK, un point de plus !";
+         var words_url=[];
+         words[user_try].forEach(function(my_word){
+	       words_url.push("<a class='ok' target='_blank' href='"+dictionaries[options.dictionary].definition_url.replace("[WORD]", my_word)+"'>"+my_word+"</a>");
+         });
+         
+         $("#responses"+user_try.length).html(words_url.join(", ")+"<br/>"+$("#responses"+user_try.length).html());
+         color="#9C0";
+      } else {
+         document.getElementById("message").innerHTML="KO, réponse déjà donnée !";
+         color="#F90";
+      }
+   }else {
+         document.getElementById("message").innerHTML="KO, le mot '"+user_try+"' n'est pas reconnu !";
+   }
+   var ld=letters_div;
+   if (letters_places == null) {
+        letters_places={};
+        user_try.split("").forEach(function(letter){
+           letters_places[letters_div[letter]]=1;
+        });
+   }
+
+   for (var i=0; i<letters.length; i++) {
+       letters_div[letters[i]]
+       if (letters_places!=null && letters_places["l"+i]) {
+          document.getElementById("l"+i).style.backgroundColor=color;
+       }else {
+          document.getElementById("l"+i).style.backgroundColor="white";
+       }
+   }
+ 
+   $("#user_try").val("");
+
+   $("#points").html(Object.size(responses));
+
+   if (color != "white")
+      setTimeout(clear_letters_color, 500);    
+
+   if (Object.size(responses)==Object.size(words)) {
+      stop_game("all_found");
+   }
+}
+
+function clear_letters_color() {
+   for (var i=0; i<letters.length; i++) {
+       document.getElementById("l"+i).style.backgroundColor="white";
+   }
+}
+
+var words={};
+var responses={};
+var letters_number=5;
+var letters=[];
+var letters_div={};
+
+function stop_game(cause) {
+   clearTimeout(timeout);
+
+   $("#stop_game_img").attr("src", "./images/stop_off.png");
+   $("#stop_game_link").attr("onclick", "");
+   $("#stop_game_link").toggleClass("pointer");
+
+   $("#start_game_img").attr("src", "./images/start_on.png");
+   $("#start_game_link").attr("onclick", "start_game();");
+   $("#start_game_link").toggleClass("pointer");
+
+   document.getElementById("touch_div").style.display="none";
+   document.getElementById("keyboard_div").style.display="none";
+   $("#solutions").show();
+   $("#responses").hide();
+
+   $("#total").html(Object.size(words));
+
+   var html="";
+   $("#result_message").removeClass("ok ko");
+   if (cause=="timeout") {
+     $("#result_message").html("Temps écoulé !");
+     $("#result_message").addClass("ko");
+   } else if (cause=="all_found") {
+     $("#result_message").html("Bravo !")
+     $("#result_message").addClass("ok");;
+   } else {
+     $("#result_message").html("Abandon !");
+     $("#result_message").addClass("ko");
+   }
+   
+
+   var solutions_by_size={3: "", 4: "", 5: ""};
+   for (var key in words) {
+      var line_style=" class='ko'";
+      if (responses[key]!=null) 
+         line_style=" class='ok'";
+
+      var words_url=[];
+      words[key].forEach(function(my_word){
+	   words_url.push("<a"+line_style+"target='_blank' href='"+dictionaries[options.dictionary].definition_url.replace("[WORD]", my_word)+"'>"+my_word+"</a>");
+      });
+         
+      solutions_by_size[key.length]+=words_url.join(", ")+"<br>";
+   }
+   $("#solutions3").html(solutions_by_size[3]);
+   $("#solutions4").html(solutions_by_size[4]);
+   $("#solutions5").html(solutions_by_size[5]);
+//   document.getElementById("solutions").innerHTML=html;
+   $("#solutions").show();
+}
+
+var force_letters;
+
+function start_game(){
+   $("#touch_div").show();
+  
+   if (options.mode == "touch") {
+       $("#keyboard_div").hide();
+   } else if (options.mode == "keyboard") {
+       $("#keyboard_div").show();
+       document.getElementById("user_try").focus();
+   }
+
+   $("#stop_game_img").attr("src", "./images/stop_on.png");
+   $("#stop_game_link").attr("onclick", "stop_game();");
+   $("#stop_game_link").toggleClass("pointer");
+
+   $("#start_game_img").attr("src" ,"./images/start_off.png");
+   $("#start_game_link").attr("onclick", "");
+   $("#start_game_link").toggleClass("pointer");
+
+   $("#points").html(0);
+   if (timeout != null) 
+      clearTimeout(timeout);
+
+   words={};
+   responses={};
+
+   var word_index = parseInt(Math.random() * dict[5].length);
+
+   var infos=dict[5][word_index].split(" ");
+
+   var letters_str=infos[0];
+
+   if (force_letters != null && force_letters != "" && force_letters.length==5)  {
+      letters_str=force_letters;
+      force_letters="";
+   }
+   var word=infos[1];
+
+   $("#solutions").hide();
+   $("#user_try").val("");
+
+   $("#responses3").html("");
+   $("#responses4").html("");
+   $("#responses5").html("");
+   $("#responses").show();
+
+   if (options.mode == "keyboard")
+      document.getElementById("user_try").focus();
+
+   letters=letters_str.toUpperCase().split("").shuffle();
+   words=find_solutions(letters);
+
+   for (var i=0; i<letters.length; i++) {
+       document.getElementById("l"+i).innerHTML=letters[i];
+       letters_div[letters[i].toLowerCase()]="l"+i;
+       REDIPS.drag.move_object({
+         obj: document.getElementById("l"+i),
+         target: [0, 0, i+1]
+//         target: [0, 0, i]
+      });
+   }
+   if (options.view_solutions_number) {
+       document.getElementById("total").innerHTML=Object.size(words);
+   } else {
+       document.getElementById("total").innerHTML="?";
+   }
+   timer=parseInt(options.init_timer)+1;
+
+   if (options.timer_active) {
+     tick();
+   }     
+//   document.getElementById("letters").innerHTML=letters.shuffle().join(" ");
+}
+
+
+function find_solutions(letters) {
+    words={};
+    var re=new RegExp("^"+letters.sort().join("?")+"?$", "i");
+    for (var length=3; length<6; length++) {
+        var lines=dict[length];
+        lines.forEach(function(line) {
+            if (line.substring(0, length).match(re)) {
+	        var word=line.substring(length+1);
+                var key=strip_accents(word);
+		if (words[key] == null) {
+                    words[key]=[];
+                }
+                words[key].push(word);
+	    }
+	});
+    }
+   return words;
+}
+
+function strip_accents(s) {
+  var translate = {
+    "à":"a","á":"a","â":"a","ã":"a","ä":"a","å":"a","ç":"c","è":"e","é":"e","ê":"e","ë":"e","ì":"i","í":"i","î":"i","ï":"i","ñ":"n","ò":"o","ó":"o","ô":"o","õ":"o","ö":"o","ù":"u","ú":"u","û":"u","ü":"u","ý":"y","ÿ":"y"
+  };
+  var translate_re = /[àáâãäåçèéêëìíîïñòóôõöùúûüýÿ]/g;
+  return ( s.replace(translate_re, function(match) { 
+    return translate[match]; 
+  }) );
+}
+
+
+</script>
+
+
+
+<script type="text/javascript">
+//<![CDATA[
+if (typeof _gstat != "undefined") _gstat.audience('','pagesperso-orange.fr');
+//]]>
+</script>
+
+</body></html>
