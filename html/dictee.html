@@ -9,7 +9,34 @@
 	
     <title>Dictée Magique</title>
 	<style>
+	body {
+	  width: 700px;
+	  transform-origin: top left;
+	}
+	/* The Modal (background) */
+	.modal {
+      display: none; /* Hidden by default */
+      position: fixed; /* Stay in place */
+      z-index: 1; /* Sit on top */
+      padding-top: 50px; /* Location of the box */
+      left: 0;
+      top: 0;
+      width: 100%; /* Full width */
+      height: 100%; /* Full height */
+      overflow: auto; /* Enable scroll if needed */
+      background-color: rgb(0,0,0); /* Fallback color */
+      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+	}
 
+	/* Modal Content */
+	.modal-content {
+      background-color: #fefefe;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+	}
+	
 	body {
 	  font-family: monospace;
 	}
@@ -74,8 +101,22 @@
 		<td class="sound on">
 		  <i class="fa fa-volume-up fa-lg"></i>
 		</td>
+		<td class="dictionnary">
+		  <select id="dictionnaries"></select>
+		  <span id="customDiv" style="display:none;"><a href="#" id="editCustomDict">Editer votre dictionnaire</a></span>
+		</td>
 	  </tr>
 	</table>
+	<div id="customDict" class="modal" style="display: none">
+	  <div class="modal-content">
+		Voici votre dictionnaire personnel (un mot par ligne):<br/>
+		<textarea style="width: 100%" rows="20" id="customWordsList"></textarea><br/>
+		<p>Les mots de plus de 10 lettres ne seront pas pris en compte</p>		
+		<p>Attention : Il est seulement enregistré sur votre poste</p>
+		<button id="cancelDict">Annuler</button>
+		<button id="saveDict">Sauvegarder</button>
+	  </div>
+	</div>
 	<table id="screen">
 	  <tr id="line1">
 		<td class="letter c1"></td>
@@ -127,11 +168,92 @@
 		<td class="letter W">W</td><td class="letter X">X</td><td class="letter C">C</td><td class="letter V">V</td><td class="letter B">B</td>
 		<td class="letter N">N</td><td class="letter ">'</td><td class="letter">#</td><td>Efface</td><td>Essaie</td>
 	  </tr>
-	  <p>Utilisez plutôt Chrome pour avoir une jolie synthèse vocale (celle de Firefox est vraiment mauvaise hélas)</p>
 	</table>
+	<p>Utilisez plutôt Chrome pour avoir une jolie synthèse vocale (celle de Firefox est vraiment mauvaise hélas)</p>
 	<script>
-	const current_dict={};
+	const dictionnaries={
+	  "sNs1" :{
+		name: "Dictée Magique standard (123 mots)",
+		words: ["BANANE","CHOU","COURSE","DIMANCHE","FRITURE","GENOU","LARGEUR","LIMONADE","MADAME","MATIN","ONCLE","PLAGE","POIRE","RETIRER","ROI","ROSE","SALADE","SAVON","SOLIDE","SOUCOUPE","SOUPE","TABLE","TOILE","VACHE","VESTE","VIRAGE","COCHON","DANSEUR","DIVISION","DROIT","JOIE","LANGUE","LINGE","MAISON","MONTAGE","MOUSSE","POULETTE","ROUILLE","SALADIER","SALIVE","SAUVAGE","SOMBRE","SOMME","SOULIER","TABLETTE","TIMBRE","TRANCHE","ALLIAGE","BONBON","BROUILLE","CAUSER","CENTAINE","COLLIER","FREIN","GRAIN","LONGUEUR","MAILLOT","MANTEAU","MARRON","MIEUX","MILLION","MURAILLE","NAVIGUER","NOUILLE","OISEAU","PALETOT","PAYSANNE","PLAIRE","PLAISIR","PLUIE","RESSORT","SOUVENT","TIMBALE","TONNEAU","TRAVAIL","TREIZE","UNIQUE","VIEUX","VILLAGE","VINAIGRE","VRAIMENT","CONDUIRE","BERCER","CADEAU","CHAPEAU","COUREUR","DOMMAGE","FRAISE","ABATTRE","ACCABLER","ANNEAU","ASSOMMER","BERCEAU","BONHEUR","CANOT","CHIFFRE","CUEILLIR","EXISTER","HABILLER","MAGASIN","MAGAZINE","MISOGYNE","NATION","NOURRIR","OCCASION","PANNEAU","POURRIR","QUATORZE","RAPPELER","RESPECT","SAUCISSE","SCULPTER","SOIXANTE","SOUCIEUX","SOUFFLE","STYLO","SYLLABE","TISSU","TRAPPE","WAGONNET","YAOURT","ZIGZAG","ZODIAQUE"
+		]
+	  },
+	  "sNs2" : {
+		name: "Dictée Magique étendue (203 mots)",
+		words: ["ABSCISSE","AMERRIR","AMPHIBIE","ANALYSE","ABHORRER","APPENTIS","ACACIA","ACCOLER","ACHOPPER","AFFLIGER","APPRENTI","AHURI","ATOLL","ALMANACH","AUTOPSIE","AMANDIER","BAHUT","BOMBYX","ABSENCE","ACCROC","AFFALER","AQUEUX","AFFOLER","ANCHOIS","APAISER","AFFUBLER","AGGRAVER","AGRAFER","AGRANDIR","APITOYER","APLATIR","APLOMB","APPELER","AISSELLE","ALAMBIC","APPLIQUE","APPOSER","AMENDER","APHONE","ALLAITER","ASPECT","ATTACHER","AQUARIUM","CANETTE","BUFFLE","CANNELLE","CAHOTEUX","CANONNER","CAJOLER","CEINDRE","CALOTTE","CARROSSE","CHARIOT","CERVELAS","CHLORURE","CHARRUE","CHORISTE","COOPTER","CYCLAMEN","CHROME","CINTRE","CYMBALE","ATTEINTE","ATTENTE","BALEINE","BAZAR","CHOPE","ARTHRITE","ÀSSOMMER","CABALE","CALANDRE","CALVAIRE","CALVITIE","CITHARE","COHORTE","COLLOQUE","BONBONNE","BONHOMME","BOUILLIR","CRISTAL","CANARI","CYLINDRE","DYSLEXIE","CUNIQUE","EMBARRAS","ERMITE","EMBRAYER","DIAPNANE","ENRHUMER","HALETANT","HAMEAU","ENZYME","DILEMME","ERGOT","DISCIPLINE","HANDICAP","ESQUIMAU","DYNAMITE","HANGAR","ETHNIE","EXQUIS","HARGNEUX","EXALTER","EXHALER","EXHIBER","EXIGEANT","EXULTER","ENTONNER","ESCROC","FALLOIR","FATIGANT","HACHURE","HAGARD","HARASSER","HASARD","HARPON","HERNIE","HEXAGONE","HIATUS","FAUNE","HOMARD","INEPTIE","HOMMAGE","HONNEUR","INERTIE","IRIDIUM","IRRITANT","HONORER","LYNX","HARCELER","HERMINE","HINDOU","HORREUR","MATELAS","HIPPIQUE","HOSTILE","MUFLE","HOUBLON","HUILEUX","MYOPIE","HORMONE","HYBRIDE","HOMONYME","HUMILIER","HYDROMEL","HYMNE","IDIOTIE","PANARIS","PHALANGE","PHARAON","PILOTIS","POLYGONE","RYTHME","ORTIE","OSCILLER","FEINDRE","HYMEN","HYPNOSE","PARLOTE","INDIEN","SCEPTRE","INDIGENT","SCHISTE","SCIENCE","SIPHON","SOURCIL","PSYCHOSE","PYRAMIDE","RAFLER","SPHINX","RHUBARBE","SYNONYME","RISQUE","TYPHON","SALSIFIS","SAPHIR","SARRASIN","SALOIR","VACILLER","TROMBONE","VOSGIEN","AMERRIR","FATRAS","GAUFRE","GIBOYEUX","GLYCINE","INDEMNE","MAROTTE","MOLETTE","MOLLESSE","MYOSOTIS","MYRTILLE","PEINTRE","PENSUM","PHLEGMON","ONGUENT","SPATIAL","SURSIS","SUSCITER","SYNCOPE","SYNTAXE","TYMPAN","TYPHUS","TYPIQUE"]
+	  },
+	  "begglo" : {
+		name: "Dictionnaire français complet (hunspell)",
+		words: []
+	  },
+	  "custom": {
+		name: "Votre dictionnaire",
+		words: []
+	  }
+	};
+	let currentDict="begglo";
+	if (localStorage.getItem("currentDict")) {
+	  currentDict=localStorage.getItem("currentDict");
+	}
+	if (localStorage.getItem("customDict")) {
+	  let customWords=localStorage.getItem("customDict").split(/\r|\n/g);
+	  customWords = customWords.filter(w =>  w.length>0 && w.length<11 ); 
+	  dictionnaries.custom.words=customWords;
+	  $("#customWordsList").val(customWords.join("\n"));
+	}
+	
+	for (let dictId in dictionnaries) {
+	  const opt = $("<option>").val(dictId).text(dictionnaries[dictId].name);
+	  if (dictId == currentDict) {
+		opt.attr("selected", "selected");
+		if (currentDict == "custom") {
+		  $("#customDiv").show();
+		  opt.text(dictionnaries[dictId].name+" ("+dictionnaries.custom.words.length+" mots)");
+		}
+	  }
+	  $("#dictionnaries").append(opt);
+	}
 
+	const bw=$("body").width();
+	const bh=$("body").height();
+	function resize() {
+	  const ww=$(window).width();
+	  const wh=$(window).height();
+	  const ratiow=ww/bw;
+	  const ratioh=wh/bh;
+	  console.log("window", ww, wh);
+	  
+	  console.log("body", bw, bh);
+	  console.log("ratio", ww/bw, wh/bh);
+	  if (ratiow<ratioh) {
+		$("body").css("transform", "scale("+ratiow+")");
+		//$("body").css({scale: ratiow});
+	  } else {
+		//$("body").css({scale: ratioh});
+		$("body").css("transform", "scale("+ratioh+")");
+	  }
+	  
+	}
+
+	resize();
+	$(window).resize(resize);
+	  
+	$("#saveDict").on("click", () => {
+	  let customWords=$("#customWordsList").val().split(/\r|\n/g);
+	  customWords = customWords.filter(w =>  w.length>0); 
+	  dictionnaries.custom.words=customWords;
+	  $('#dictionnaries option[value="custom"]').text(dictionnaries.custom.name+" ("+dictionnaries.custom.words.length+" mots)");
+	  localStorage.setItem("customDict", $("#customWordsList").val());
+	  $("#customDict").hide();
+	});
+
+	$("#editCustomDict").on("click", () => {
+	  $("#customDict").show();
+	});
+	
+	$("#cancelDict").on("click", () => {
+	  $("#customDict").hide();
+	});
+	
 	function stripAccents(s) {
 	  var translate = {
 		"à":"a","á":"a","â":"a","ã":"a","ä":"a","å":"a","ç":"c","è":"e","é":"e","ê":"e","ë":"e","ì":"i","í":"i","î":"i","ï":"i","ñ":"n","ò":"o","ó":"o","ô":"o","õ":"o","ö":"o","ù":"u","ú":"u","û":"u","ü":"u","ý":"y","ÿ":"y"
@@ -145,7 +267,7 @@
 	function loadDict() {
 	  let downloaded_size;
 	  for (var i=5; i<=8; i++) {
-		if (current_dict[i]==null) {
+		if (dictionnaries.begglo.words[i]==null) {
           let async= $.ajax({
 			dataType: "json",
 			cache: true,
@@ -154,7 +276,7 @@
 			async: false,
 			success: function(data) {
               var i = this.words_length;
-              current_dict[i]=data;
+              dictionnaries.begglo.words[i]=data;
 			}
           });
 		}
@@ -176,6 +298,17 @@
 		speechSynthesis.speak(msg);
 	  }
 	}
+
+	$("#dictionnaries" ).on( "change", () => {
+	  currentDict=$("#dictionnaries option:selected").val();
+	  localStorage.setItem("currentDict", currentDict);	  
+	  if (currentDict == "custom") {
+		$("#customDiv").show();
+	  } else {
+		$("#customDiv").hide();
+	  }
+	  
+	});
 
 	function sayLetter(letter) {
 	  if (letter.match(/[a-zA-Z]/)) {
@@ -216,7 +349,7 @@
 	let sound=true;
 	loadDict();
 
-    $("body").keydown(function (e) {
+    $(".keyboard").keydown(function (e) {
 	  if (e.which == 8) {
 		$("#screen td.c"+input.length).text("");
 		input = input.slice(0, -1);
@@ -226,7 +359,7 @@
 	  }
 	});
 	
-    $("body").keypress(function (e) {
+    $(".keyboard").keypress(function (e) {
 	  if (e.which == 13) {
 		return false;
 	  } else if (e.which>=65 && e.which<=122) {
@@ -304,11 +437,17 @@
 		  $("td.letter").css("color", "black");
 		  lastWord="";
 		  input="";
-		  const length = Math.floor(Math.random() * 4) + 5;
-		  const index = parseInt(Math.random() * current_dict[length].length);
-		  const infos=current_dict[length][index].split(" ");
-		  mystery.word=infos[1];
-		  mystery.cleanedWord=stripAccents(infos[1]).toUpperCase();
+		  if (currentDict == "begglo") {
+			const length = Math.floor(Math.random() * 4) + 5;
+			const index = parseInt(Math.random() * dictionnaries.begglo.words[length].length);
+			const infos=dictionnaries.begglo.words[length][index].split(" ");
+			mystery.word=infos[1];
+		  } else {
+			const index = parseInt(Math.random() * dictionnaries[currentDict].words.length);
+			mystery.word=dictionnaries[currentDict].words[index];
+		  }
+		  
+		  mystery.cleanedWord=stripAccents(mystery.word).toUpperCase();
 		  mystery.mysteryWord=mystery.cleanedWord.replace(/./g, "_");
 		  mode="mystery";
 		  $("#screen td").text("");
