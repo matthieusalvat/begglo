@@ -1,0 +1,82 @@
+body {
+	width: 800px;
+	margin:0px;
+	text-align: center;
+	transform-origin: top left;
+	font-family: monospace;
+	
+}
+
+#content{
+	background-color: #f3483e;
+	border:3px solid black;
+	border-radius: 20px 20px;
+	padding: 10px;
+}
+
+
+#screen {
+	vertical-align: middle;
+	background-color: black;
+	color: #32b2f1;
+	width: 774px;
+	margin-bottom: 2em;
+	margin-top: 2em;
+}
+
+#screen table {
+	border-spacing: 8px;
+}
+
+#screen td{
+	border: 0px;
+	width: auto;
+	height: 70px;
+	font-size: 60px;
+}
+
+.keyboard{
+	border:3px solid black;
+	background-color: #32b2f1;
+	border-spacing: 10px;
+}
+
+.keyboard td{
+	background-color: #f5c644;
+	border:3px solid black;
+	border-radius: 8px 8px;
+	font-weight: bold;
+}
+
+#options td {
+	background-color: #f5c644;
+}
+
+.keyboard td.vowel{
+	background-color: #f5f04e;
+}
+
+.keyboard td.mode{
+	background-color: #f1481d;
+}
+
+.keyboard td.pressed{
+	color: #32b2f1;
+	background-color: black;
+}
+
+.keyboard td.used{
+	background-color: #CCC;
+	color: black;
+}
+
+td.selected{
+	background-color: black;
+	color: white;
+}
+
+
+td.mode.selected{
+	background-color: black;
+	color: white;
+}
