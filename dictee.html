@@ -12,6 +12,7 @@
 	body {
 	  width: 700px;
 	  transform-origin: top left;
+	  font-family: monospace;
 	}
 	/* The Modal (background) */
 	.modal {
@@ -37,10 +38,6 @@
       width: 80%;
 	}
 	
-	body {
-	  font-family: monospace;
-	}
-	
 	#keyboard-type {
 	  border-collapse: collapse;
 	}
@@ -49,6 +46,14 @@
 	  border:1px solid black;
 	  width: 60px;
 	  padding: 5px;
+	}
+
+	.keyboard td.pressed{
+	  background-color: #FCA;
+	}
+
+	.keyboard td.used{
+	  color: #CCC;
 	}
 
 	td.selected{
@@ -61,14 +66,15 @@
 	}
 
 	#screen {
-	  margin-bottom: 1em;
+	  margin-bottom: 2em;
+	  margin-top: 2em;
 	}
 	
 	table td{
 	  cursor: pointer;
 	  width: 60px;
 	  height: 60px;
-	  border-collapse: 2px;
+	  border-spacing: 2px;
 	  border:1px solid black;
 	  border-radius: 5px 5px;
 	  text-align:center;
@@ -81,7 +87,6 @@
 
 	#screen td:hover {
 	  cursor: default;
-	  background-color: transparent;
 	}
 	
 	table td.letter{
@@ -94,8 +99,10 @@
 	  height: 30px;
 	}
 	</style>
+	<link rel="stylesheet" href="./sNs.css">
   </head>
   <body>
+	<div id="content">
 	<table id="options">
 	  <tr>
 		<td class="sound on">
@@ -117,48 +124,52 @@
 		<button id="saveDict">Sauvegarder</button>
 	  </div>
 	</div>
-	<table id="screen">
-	  <tr id="line1">
-		<td class="letter c1"></td>
-		<td class="letter c2"></td>
-		<td class="letter c3"></td>
-		<td class="letter c4"></td>
-		<td class="letter c5"></td>
-		<td class="letter c6"></td>
-		<td class="letter c7"></td>
-		<td class="letter c8"></td>
-		<td class="letter c9"></td>
-		<td class="letter c10"></td>
-	  </tr>
-	</table>
+	<div id="screen">
+	  <table>
+		<tr class="line" id="line1">
+		  <td class="letter c1"></td>
+		  <td class="letter c2"></td>
+		  <td class="letter c3"></td>
+		  <td class="letter c4"></td>
+		  <td class="letter c5"></td>
+		  <td class="letter c6"></td>
+		  <td class="letter c7"></td>
+		  <td class="letter c8"></td>
+		  <td class="letter c9"></td>
+		  <td class="letter c10"></td>
+		</tr>
+	  </table>
+	</div>
 	<table class="keyboard" id="keyboard-abcdef">
 	  <tr>
-		<td class="azerty">clavier<br/>AZERTY</td><td class="abcdef selected">clavier<br/>ABCDEF</td>		
-		<td>Rejoue</td><td>Répète</td><td>Aide</td>
-		<td class="mystery">Mystère</td><td>Secret</td><td>Lettre</td><td>Dis-le</td><td>Epelle</td>
+		<td class="azerty mode">clavier<br/>AZERTY</td><td class="abcdef mode selected">clavier<br/>ABCDEF</td>		
+		<td class="mode">Rejoue</td><td class="mode">Répète</td><td class="mode">Aide</td>
+		<td class="mode mystery">Mystère</td><td class="mode">Secret</td><td class="mode">Lettre</td><td class="mode">Dis-le</td>
+		<td class="mode spell">Epelle<span style="display:none" class="spellDetail"><br/><span class="spellCount">0</span>/10</span></td>
 	  </tr>
 	  <tr>
-		<td class="letter A">A</td><td class="letter B">B</td><td class="letter C">C</td><td class="letter D">D</td><td class="letter E">E</td>
-		<td class="letter F">F</td><td class="letter G">G</td><td class="letter H">H</td><td class="letter I">I</td><td class="letter J">J</td>
+		<td class="letter A vowel">A</td><td class="letter B">B</td><td class="letter C">C</td><td class="letter D">D</td><td class="letter E vowel">E</td>
+		<td class="letter F">F</td><td class="letter G">G</td><td class="letter H">H</td><td class="letter I vowel">I</td><td class="letter J">J</td>
 	  </tr>
 	  <tr>
-		<td class="letter K">K</td><td class="letter L">L</td><td class="letter M">M</td><td class="letter N">N</td><td class="letter O">O</td>
+		<td class="letter K">K</td><td class="letter L">L</td><td class="letter M">M</td><td class="letter N">N</td><td class="letter O vowel">O</td>
 		<td class="letter P">P</td><td class="letter Q">Q</td><td class="letter R">R</td><td class="letter S">S</td><td class="letter T">T</td>
 	  </tr>
 	  <tr>
-		<td class="letter U">U</td><td class="letter V">V</td><td class="letter W">W</td><td class="letter X">X</td><td class="letter Y">Y</td>
-		<td class="letter Z">Z</td><td class="letter ">'</td><td class="letter">#</td><td>Efface</td><td>Essaie</td>
+		<td class="letter U vowel">U</td><td class="letter V">V</td><td class="letter W">W</td><td class="letter X">X</td><td class="letter Y vowel">Y</td>
+		<td class="letter Z">Z</td><td class="letter mode">'</td><td class="letter mode">#</td><td class="mode">Efface</td><td class="mode">Essaie</td>
 	  </tr>
 	</table>
 	<table class="keyboard" id="keyboard-azerty" style="display: none">
 	  <tr>
-		<td class="azerty">clavier<br/>AZERTY</td><td class="abcdef selected">clavier<br/>ABCDEF</td>		
-		<td>Rejoue</td><td>Répète</td><td>Aide</td>
-		<td>Mystère</td><td>Secret</td><td>Lettre</td><td>Dis-le</td><td>Epelle</td>
+		<td class="azerty mode">clavier<br/>AZERTY</td><td class="abcdef mode selected">clavier<br/>ABCDEF</td>		
+		<td class="mode">Rejoue</td><td class="mode">Répète</td><td class="mode">Aide</td>
+		<td class="mode mystery">Mystère</td><td class="mode">Secret</td><td class="mode">Lettre</td><td class="mode">Dis-le</td>
+		<td class="mode spell">Epelle<span style="display:none" class="spellDetail"><br/><span class="spellCount">0</span>/10</span></td>
 	  </tr>
 	  <tr>
-		<td class="letter A">A</td><td class="letter Z">Z</td><td class="letter E">E</td><td class="letter R">R</td><td class="letter T">T</td>
-		<td class="letter Y">Y</td><td class="letter U">U</td><td class="letter I">I</td><td class="letter O">O</td><td class="letter P">P</td>
+		<td class="letter A vowel">A</td><td class="letter Z">Z</td><td class="letter E vowel">E</td><td class="letter R">R</td><td class="letter T">T</td>
+		<td class="letter Y vowel">Y</td><td class="letter U vowel">U</td><td class="letter I vowel">I</td><td class="letter O vowel">O</td><td class="letter P">P</td>
 	  </tr>
 	  <tr>
 		<td class="letter Q">Q</td><td class="letter S">S</td><td class="letter D">D</td><td class="letter F">F</td><td class="letter G">G</td>
@@ -166,19 +177,20 @@
 	  </tr>
 	  <tr>
 		<td class="letter W">W</td><td class="letter X">X</td><td class="letter C">C</td><td class="letter V">V</td><td class="letter B">B</td>
-		<td class="letter N">N</td><td class="letter ">'</td><td class="letter">#</td><td>Efface</td><td>Essaie</td>
+		<td class="letter N">N</td><td class="letter mode">'</td><td class="letter mode">#</td><td class="mode">Efface</td><td class="mode">Essaie</td>
 	  </tr>
 	</table>
 	<p>Utilisez plutôt Chrome pour avoir une jolie synthèse vocale (celle de Firefox est vraiment mauvaise hélas)</p>
+	</div>
 	<script>
 	const dictionnaries={
 	  "sNs1" :{
-		name: "Dictée Magique standard (123 mots)",
+		name: "Dictée Magique 1ere version (123 mots)",
 		words: ["BANANE","CHOU","COURSE","DIMANCHE","FRITURE","GENOU","LARGEUR","LIMONADE","MADAME","MATIN","ONCLE","PLAGE","POIRE","RETIRER","ROI","ROSE","SALADE","SAVON","SOLIDE","SOUCOUPE","SOUPE","TABLE","TOILE","VACHE","VESTE","VIRAGE","COCHON","DANSEUR","DIVISION","DROIT","JOIE","LANGUE","LINGE","MAISON","MONTAGE","MOUSSE","POULETTE","ROUILLE","SALADIER","SALIVE","SAUVAGE","SOMBRE","SOMME","SOULIER","TABLETTE","TIMBRE","TRANCHE","ALLIAGE","BONBON","BROUILLE","CAUSER","CENTAINE","COLLIER","FREIN","GRAIN","LONGUEUR","MAILLOT","MANTEAU","MARRON","MIEUX","MILLION","MURAILLE","NAVIGUER","NOUILLE","OISEAU","PALETOT","PAYSANNE","PLAIRE","PLAISIR","PLUIE","RESSORT","SOUVENT","TIMBALE","TONNEAU","TRAVAIL","TREIZE","UNIQUE","VIEUX","VILLAGE","VINAIGRE","VRAIMENT","CONDUIRE","BERCER","CADEAU","CHAPEAU","COUREUR","DOMMAGE","FRAISE","ABATTRE","ACCABLER","ANNEAU","ASSOMMER","BERCEAU","BONHEUR","CANOT","CHIFFRE","CUEILLIR","EXISTER","HABILLER","MAGASIN","MAGAZINE","MISOGYNE","NATION","NOURRIR","OCCASION","PANNEAU","POURRIR","QUATORZE","RAPPELER","RESPECT","SAUCISSE","SCULPTER","SOIXANTE","SOUCIEUX","SOUFFLE","STYLO","SYLLABE","TISSU","TRAPPE","WAGONNET","YAOURT","ZIGZAG","ZODIAQUE"
 		]
 	  },
 	  "sNs2" : {
-		name: "Dictée Magique étendue (203 mots)",
+		name: "Dictée Magique 2eme (203 mots)",
 		words: ["ABSCISSE","AMERRIR","AMPHIBIE","ANALYSE","ABHORRER","APPENTIS","ACACIA","ACCOLER","ACHOPPER","AFFLIGER","APPRENTI","AHURI","ATOLL","ALMANACH","AUTOPSIE","AMANDIER","BAHUT","BOMBYX","ABSENCE","ACCROC","AFFALER","AQUEUX","AFFOLER","ANCHOIS","APAISER","AFFUBLER","AGGRAVER","AGRAFER","AGRANDIR","APITOYER","APLATIR","APLOMB","APPELER","AISSELLE","ALAMBIC","APPLIQUE","APPOSER","AMENDER","APHONE","ALLAITER","ASPECT","ATTACHER","AQUARIUM","CANETTE","BUFFLE","CANNELLE","CAHOTEUX","CANONNER","CAJOLER","CEINDRE","CALOTTE","CARROSSE","CHARIOT","CERVELAS","CHLORURE","CHARRUE","CHORISTE","COOPTER","CYCLAMEN","CHROME","CINTRE","CYMBALE","ATTEINTE","ATTENTE","BALEINE","BAZAR","CHOPE","ARTHRITE","ÀSSOMMER","CABALE","CALANDRE","CALVAIRE","CALVITIE","CITHARE","COHORTE","COLLOQUE","BONBONNE","BONHOMME","BOUILLIR","CRISTAL","CANARI","CYLINDRE","DYSLEXIE","CUNIQUE","EMBARRAS","ERMITE","EMBRAYER","DIAPNANE","ENRHUMER","HALETANT","HAMEAU","ENZYME","DILEMME","ERGOT","DISCIPLINE","HANDICAP","ESQUIMAU","DYNAMITE","HANGAR","ETHNIE","EXQUIS","HARGNEUX","EXALTER","EXHALER","EXHIBER","EXIGEANT","EXULTER","ENTONNER","ESCROC","FALLOIR","FATIGANT","HACHURE","HAGARD","HARASSER","HASARD","HARPON","HERNIE","HEXAGONE","HIATUS","FAUNE","HOMARD","INEPTIE","HOMMAGE","HONNEUR","INERTIE","IRIDIUM","IRRITANT","HONORER","LYNX","HARCELER","HERMINE","HINDOU","HORREUR","MATELAS","HIPPIQUE","HOSTILE","MUFLE","HOUBLON","HUILEUX","MYOPIE","HORMONE","HYBRIDE","HOMONYME","HUMILIER","HYDROMEL","HYMNE","IDIOTIE","PANARIS","PHALANGE","PHARAON","PILOTIS","POLYGONE","RYTHME","ORTIE","OSCILLER","FEINDRE","HYMEN","HYPNOSE","PARLOTE","INDIEN","SCEPTRE","INDIGENT","SCHISTE","SCIENCE","SIPHON","SOURCIL","PSYCHOSE","PYRAMIDE","RAFLER","SPHINX","RHUBARBE","SYNONYME","RISQUE","TYPHON","SALSIFIS","SAPHIR","SARRASIN","SALOIR","VACILLER","TROMBONE","VOSGIEN","AMERRIR","FATRAS","GAUFRE","GIBOYEUX","GLYCINE","INDEMNE","MAROTTE","MOLETTE","MOLLESSE","MYOSOTIS","MYRTILLE","PEINTRE","PENSUM","PHLEGMON","ONGUENT","SPATIAL","SURSIS","SUSCITER","SYNCOPE","SYNTAXE","TYMPAN","TYPHUS","TYPIQUE"]
 	  },
 	  "begglo" : {
@@ -190,7 +202,7 @@
 		words: []
 	  }
 	};
-	let currentDict="begglo";
+	let currentDict="sNs2";
 	if (localStorage.getItem("currentDict")) {
 	  currentDict=localStorage.getItem("currentDict");
 	}
@@ -216,27 +228,26 @@
 	const bw=$("body").width();
 	const bh=$("body").height();
 	function resize() {
-	  const ww=$(window).width();
-	  const wh=$(window).height();
+	  let ww=$(window).width();
+	  if (ww>1280) {
+		ww=1280
+	  }
+	  let wh=$(window).height();
+	  if (wh>1280) {
+		wh=1280
+	  }
 	  const ratiow=ww/bw;
 	  const ratioh=wh/bh;
-	  console.log("window", ww, wh);
-	  
-	  console.log("body", bw, bh);
-	  console.log("ratio", ww/bw, wh/bh);
+	  console.log("resize window:", ww, wh, "body:", bw, bh, "ratio", ww/bw, wh/bh);
 	  if (ratiow<ratioh) {
 		$("body").css("transform", "scale("+ratiow+")");
-		//$("body").css({scale: ratiow});
 	  } else {
-		//$("body").css({scale: ratioh});
 		$("body").css("transform", "scale("+ratioh+")");
 	  }
-	  
 	}
 
 	resize();
-	$(window).on("orientationchange", resize);
-	$(window).on("resize", resize);
+	$(window).on("resize", () => {resize();resize()});
 	  
 	$("#saveDict").on("click", () => {
 	  let customWords=$("#customWordsList").val().split(/\r|\n/g);
@@ -311,12 +322,53 @@
 	  
 	});
 
+	function getNextSpellWord(init) {
+	  if (init) {
+		$(".spellDetail").show();
+		spell.error=0;
+		spell.number=0;
+	  }
+	  spell.wrong=0;
+	  spell.number++;
+	  $(".spellCount").text(spell.number);
+	  mode="spell";
+	  $(".mode").removeClass("selected");
+	  $(".spell").addClass("selected");
+	  input="";
+	  printWord("");
+	  spell.word=getWord();
+	  spell.cleanedWord=stripAccents(spell.word).toUpperCase();
+	  speak("Epelle "+spell.word);
+	  lastWord="Epelle "+spell.word;
+	}
+
+	function printWord(word) {
+	  $("#screen td.letter").text("");
+	  for (let i=0; i<word.length;i++) {
+		$("#screen td.c"+(i+1)).text(word[i]);
+	  }
+	}
+	
+	function getWord() {
+	  let word="";
+	  if (currentDict == "begglo") {
+		const length = Math.floor(Math.random() * 4) + 5;
+		const index = parseInt(Math.random() * dictionnaries.begglo.words[length].length);
+		const infos=dictionnaries.begglo.words[length][index].split(" ");
+		word=infos[1];
+	  } else {
+		const index = parseInt(Math.random() * dictionnaries[currentDict].words.length);
+		word=dictionnaries[currentDict].words[index];
+	  }
+	  return word;
+	}
+	
 	function sayLetter(letter) {
 	  if (letter.match(/[a-zA-Z]/)) {
 		speak(letter);
-		$("td."+letter).css("background-color", "#FCA");
+		$("td."+letter).addClass("pressed");
 		setTimeout(()=>{
-		  $("td."+letter).css("background-color", "transparent")
+		  $("td."+letter).removeClass("pressed");
 		}, 400);
 	  }
 	  if (mode=="mystery") {
@@ -324,12 +376,8 @@
 		  mystery.mysteryWord=setCharAt(mystery.mysteryWord, i, mystery.cleanedWord[i]);
 		  mystery.cleanedWord=setCharAt(mystery.cleanedWord, i, " ");
 		}
-		for (let i=0; i<mystery.mysteryWord.length;i++) {
-		  $("#screen td.c"+(i+1)).text(mystery.mysteryWord[i]);
-		}
-		$("td."+letter).css("color", "#CCC");
-		
-		$("#screen").val(mystery.mysteryWord);
+		printWord(mystery.mysteryWord);
+		$("td."+letter).addClass("used");
 		if (mystery.cleanedWord.replace(/\s+/, '') == "") {
 		  lastWord=mystery.word;
 		  input=mystery.word;
@@ -371,13 +419,11 @@
 		return true;
 	  }
     });
-
+	
 	
 	let mode="";
-	let mystery={
-	  "word": "",
-	  "cleanedWord": ""
-	};
+	let mystery={};
+	let spell={};
 	
 	$("#options td").on("click", (e) => {
 	  let opt = $(e.target).closest("td").attr('class');
@@ -398,9 +444,41 @@
 		sayLetter(text);		
 	  } else {
 		if (text=="Essaie") {
-		  text=input;
+		  if (mode == "spell") {
+			if (spell.number>=10) {
+			  if (spell.error==0) {
+				printWord("0 erreur");
+				speak("Super, tu n'as fait aucune erreur");
+			  } else {
+				printWord(spell.error+" erreurs");
+				speak("Tu peux meiux faire");
+			  }
+			} else {
+			  if (input == spell.cleanedWord) {
+				speak("Bravo");	
+				getNextSpellWord();
+			  } else {
+				spell.wrong++;
+				if (spell.wrong>1) {
+				  speak("Dommage");
+				  spell.error++;
+				  printWord(spell.cleanedWord);
+				  setTimeout(()=>{
+					getNextSpellWord();
+				  }, 2000);
+				} else {
+				  speak("Essaye encore");					
+				  $("#screen td.letter").text("");
+				  input="";
+				}
+			  }
+			}
+			text="";
+		  } else {
+			text=input;
+		  }
 		} else if (text=="Efface") {
-		  $("#screen td").text("");
+		  $("#screen td.letter").text("");
 		  input="";
 		  text="";
 		} else if (text.match(/^clavier/)) {
@@ -428,38 +506,31 @@
 		  text="";
 		} else if (text=="Mystère" && mode=="mystery") {
 		  mode="";
-		  $("td.letter").css("color", "black");
+		  $("td.letter").removeClass("used");
 		  lastWord="";
-		  $("#screen td").text("");
-		  $(".mystery").removeClass("selected");
+		  $("#screen td.letter").text("");
+		  $(".mode").removeClass("selected");
 		  input="";
 		  text="";
 		} else if (text=="Mystère" || (mode=="mystery" && text=="Rejoue")) {
-		  $("td.letter").css("color", "black");
+		  $(".spellDetail").hide();
+		  $("td.letter").removeClass("used");
 		  lastWord="";
 		  input="";
-		  if (currentDict == "begglo") {
-			const length = Math.floor(Math.random() * 4) + 5;
-			const index = parseInt(Math.random() * dictionnaries.begglo.words[length].length);
-			const infos=dictionnaries.begglo.words[length][index].split(" ");
-			mystery.word=infos[1];
-		  } else {
-			const index = parseInt(Math.random() * dictionnaries[currentDict].words.length);
-			mystery.word=dictionnaries[currentDict].words[index];
-		  }
-		  
+		  mystery.word=getWord();
 		  mystery.cleanedWord=stripAccents(mystery.word).toUpperCase();
 		  mystery.mysteryWord=mystery.cleanedWord.replace(/./g, "_");
 		  mode="mystery";
-		  $("#screen td").text("");
+		  $("#screen td.letter").text("");
 		  for (let i=0; i<mystery.mysteryWord.length;i++) {
 			$("#screen td.c"+(i+1)).text("_");
 		  }
 		  text="";
+		  $(".mode").removeClass("selected");
 		  $(".mystery").addClass("selected");
-		} else if (text=="Epelle") {
-		  text=input.split('').join(", ");
-		  speak(text);
+		} else if (text.match(/Epelle/) || (mode=="spell" && text=="Rejoue")) {
+		  $("td.letter").removeClass("used");
+		  getNextSpellWord(true);
 		  text="";
 		} else {
 		  text="";
