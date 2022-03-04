@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">	
+    <title>Begglo</title>
+
+	<script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    
+    <script src="https://unpkg.com/vue@2.6.14/dist/vue.js"></script>
+    <script type='text/javascript' src='https://cdn.jsdelivr.net/npm/webcom@2.15.11/webcom.js'></script>
+
+    <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue-icons.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/gh/dbunic/REDIPS_drag@master/redips-drag-min.js"></script>
+    
+    <!-- Copyright © 2014 Monotype Imaging Inc. All rights reserved -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boosted@4.5.3/dist/css/orangeHelvetica.min.css"
+          integrity="sha384-ZWV5rANfkZIt/7HDFToWXT+5LfpEbtDN22vw9WhARiDc+o6zJ4qxwdTwskCbe8NK" crossorigin="anonymous">
+    <!-- Copyright © 2016 Orange SA. All rights reserved -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boosted@4.5.3/dist/css/orangeIcons.min.css"
+          integrity="sha384-R6GN9ea/4pryAfJqIKDPT52rqJuxaMkZndUr7tl6YQmESyczsGyDgIbpuXvebpF5" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boosted@4.5.3/dist/css/boosted.min.css"
+          integrity="sha384-2x94UsUfEIjfJm4eAvt3wXrWUC/pAef/uLL2Q6KkHM9bgnm7fHaLTVOfjHlijBJS" crossorigin="anonymous">
+
+	<link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css" />
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+
+    
+	<style>
+     table {
+       border-collapse: collapse;
+       border: 0px;
+     }
+
+     table td, table th {
+       border: 1px solid black;
+     }
+
+     table tr.disconnected {
+       background-color: grey;
+     }
+
+    table.game {
+	  width: 100%;
+	}
+	
+     table.game td {
+       border: 1px solid black;
+       padding: 0px;
+	   margin: 0px;
+	   vertical-align: middle;
+	   text-align: center;
+     }
+
+     table.game td .letter {
+       vertical-align: middle;
+       background-color: white;
+       margin: auto;
+       border: 1px solid black;
+	   padding: 0px;
+       text-align: center;
+     }
+
+     table.game td .letter.alreadyFound {
+       background-color: #F90;
+     }
+
+     table.game td .letter.found {
+       background-color: #6C0;
+     }
+	
+	table caption{
+	  font-size: 1em;
+	  border: 1px solid black;
+	  font-weight: bold;
+	  text-align: center;
+	 }
+
+	 .gameInfo div {
+       height: 3em;
+	   margin: auto;
+	   color: white;
+       width: 3em;
+       border-radius: 3em;
+       text-align: center;
+       font-weight: bold;
+       font-size: 3em;
+       line-height: 3em;
+	 }
+	
+     .countdown {
+     }
+
+     .score {
+       background-color: grey;
+     }
+
+     .redips-drag {
+       cursor: move;
+     }
+
+	.results {
+	  vertical-align: top;
+	}
+	
+	.result {
+	  display: inline-block;
+	  border: 1px solid black;
+	  vertical-align: top;
+	  margin-right: 10px;
+	}
+
+	.result p {
+	  border-bottom: 1px solid black;
+	  text-align: center;
+	  font-weight: bold;
+      margin: 0px;
+      padding-right: 4px;
+      padding-left: 4px;
+	}
+
+	.result p.header {
+	  text-align: center;
+	  font-weight: bold;
+	}
+
+	.result p a {
+	  color: red;
+	  display: block;
+	}
+
+	.result p a.found {
+	  color: green;
+	 }
+
+     .fixedTd {
+       width: 1em;
+     }
+     
+     .userResult {
+       width: 1em;
+       height: 1em;
+       line-height: 1em;
+       vertical-align: middle;
+       display: inline-block;
+     }
+
+	</style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+     const webcomURL="https://io.datasync.orange.com";
+     const appId="ethertools";
+     const subPath="begglo";  
+
+	 const options={
+	   "dictionary" : "fr",
+	   "dyslexic_font" : 0,
+	   "min_letters" : 3,
+	   "max_letters" : 5,
+	   "empty_places" : 1,
+	   "next_letters" : "",
+	   "skin" : "default",
+	 };
+
+     const dictionaries={
+	   "fr" : {
+		 "file" : "dict.fr.json",
+		 "definition_url" : "http://fr.wiktionary.com/wiki/[WORD]",
+		 "source" : "package hunspell-dictionary-fr sur Ubuntu",
+		 "label": "Français"
+	   },
+	   "br" : {
+		 "file" : "dict.br.json",
+		 "definition_url" : "http://br.wiktionary.com/wiki/[WORD]",
+		 "source" : "An Drouizig Breton Spellchecker http://extensions.openoffice.org/en/project/drouizig-breton-spellchecker",
+		 "label": "Breton"
+	   },
+	   "en_GB" : {
+		 "file" : "dict.en_GB.json",
+		 "definition_url" : "http://en.wiktionary.com/wiki/[WORD]",
+		 "source" : "package hunspell-dictionary-en sur Ubuntu",
+		 "label": "Anglais"
+	   }
+	 };
+
+     const dictionariesOptions=[];
+     for (let id in dictionaries) {
+       dictionariesOptions.push({
+         value: id,
+         text: dictionaries[id].label
+       });
+     }
+
+     const redips = {};
+     redips.init = function () {
+	   // reference to the REDIPS.drag library
+	 };
+
+
+	 function strip_accents(s) {
+	   var translate = {
+		 "à":"a","á":"a","â":"a","ã":"a","ä":"a","å":"a","ç":"c","è":"e","é":"e","ê":"e","ë":"e","ì":"i","í":"i","î":"i","ï":"i","ñ":"n","ò":"o","ó":"o","ô":"o","õ":"o","ö":"o","ù":"u","ú":"u","û":"u","ü":"u","ý":"y","ÿ":"y"
+	   };
+	   var translate_re = /[àáâãäåçèéêëìíîïñòóôõöùúûüýÿ]/g;
+	   return ( s.replace(translate_re, function(match) { 
+		 return translate[match]; 
+	   }) );
+	 }
+
+     
+     Vue.component('waiting', {
+	   props: ['gameID', 'auth'],
+	   data: function() {
+         return {
+         }
+       },
+       template: '\
+       <div>\
+       </div>\
+       '
+     });
+     
+     Vue.component('settings', {
+	   props: ['gameID', 'auth', 'prefill'],
+	   data: function() {
+         return {
+	       "dictionary" : "fr",
+	       "dyslexic_font" : 0,
+	       "min_letters" : 3,
+	       "max_letters" : 5,
+           "duration": 120,
+	       "empty_places" : 1,
+	       "next_letters" : "",
+	       "skin" : "default",
+         }
+       },
+       template: '\
+       <div>\
+         <b-form-group id="dictionary" label="Dictionnaire">\
+           <b-form-select v-model="dictionary" :options="dictionariesOptions"></b-form-select>\
+         </b-form-group>\
+         <b-form-group id="min_letters" label="Nombre minimum de lettres">\
+           <b-form-input v-model.number="min_letters" type="number" min="3" max="15"></b-form-input>\
+         </b-form-group>\
+         <b-form-group id="max_letters" label="Nombre maximum de lettres">\
+           <b-form-input v-model.number="max_letters" type="number" min="3" max="15"></b-form-input>\
+         </b-form-group>\
+         <b-form-group id="empty_places" label="Nombre cases vides pour déplacer les lettres">\
+           <b-form-input v-model.number="empty_places" type="number" min="1" max="5"></b-form-input>\
+         </b-form-group>\
+         <b-form-group id="duration" label="Durée d\'une manche">\
+           <b-form-input v-model.number="duration" type="number" min="10" max="600"></b-form-input>\
+         </b-form-group>\
+       </div>\
+       ',
+	   created: function() {
+		 if (this.prefill) {
+		   this.dictionary=this.prefill.dictionary || "fr";
+		   this.min_letters=this.prefill.min_letters || 3;
+		   this.max_letters=this.prefill.max_letters || 5;
+		   this.duration=this.prefill.duration || 120;
+		   this.empty_places=this.prefill.empty_places || 1;
+		 }
+	   },
+       computed: {
+         dictionariesOptions() {
+           const dictionariesOptions=[];
+           for (let id in dictionaries) {
+             dictionariesOptions.push({
+               value: id,
+               text: dictionaries[id].label
+             });
+           }
+           return dictionariesOptions;
+         }
+       },
+       methods: {
+         launchGame() {
+           console.log("launchGame", this.gameID);
+           this.$db.child('games').child(`#${this.gameID}`).child('meta').set({
+             dictionary: this.dictionary,
+             min_letters: this.min_letters,
+             max_letters: this.max_letters,
+			 empty_places: this.empty_places || 1,
+             creator: this.auth.uid,
+             duration: this.duration,
+             word: "",
+             creation: Webcom.ServerValue.TIMESTAMP
+           }, (error)=> {
+             console.log("error", error);
+             this.$emit('loadGame');
+           });
+         }
+       }
+     });
+
+     
+     new Vue({
+	   el: '#app',
+	   data: function() {
+         return {
+           auth: null,
+		   link: "",
+           pseudo: "",
+           color: "",
+           gameID: "",
+           users: null,
+           ready: false,
+           loading: false,
+           score: 0,
+           loadingProgress: 0,
+           loadingPrevision: 0,
+           startedAt: 0,
+           endedAt: 0,
+           initialized: false,
+           loaded: false,
+           state: "INIT",
+           words: {},
+           solutions: {},
+           responses: {},
+           letters: "",
+           options: null,
+		   lastOptions: null,
+           countdownInterval: null,
+		   allWordFound: false,
+           stopTimeout: null,
+           countdown: "",
+         }
+       },
+       template: '<div>\
+       <b-navbar toggleable="lg" type="dark" class="mb-4">\
+         <b-navbar-brand href="#" class="ms-2">Begglo</b-navbar-brand>\
+       </b-navbar>\
+       <div class="container-xxl">\
+         <b-modal ok-only no-close-on-backdrop no-close-on-esc hide-header-close :title="\'Paramètres de la partie\'" :visible="auth && initialized && ! options" @ok="saveOptions">\
+           <settings ref="settings" v-if="auth && initialized && ! options" v-bind:gameID="gameID" v-bind:auth="auth" v-on:loadGame="load" v-bind:prefill="lastOptions"/>\
+         </b-modal>\
+         <div class="row" v-if="auth && initialized && options">\
+           <div class="col-md-6 col-xs-12" v-if="options" v-show="this.state===\'RUNNING\'">\
+             <div class="row gameInfo">\
+               <span class="col-md-6"><div v-show="countdown" class="info coutdown" :style="{backgroundColor: this.countdown<10 ? \'red\' : \'green\'}">{{this.countdown}} s</div></span>\
+               <span class="col-md-6"><div class="info score">{{score}} pt</div></span>\
+             </div>\
+             <table class="table solutions">\
+               <caption>Nombre de mots trouvés/à trouver</caption>\
+               <tr>\
+                 <td v-for="size, index in solutions.size">{{index}}</td>\
+               </tr>\
+               <tr>\
+                 <td v-for="size, index in solutions.size">{{responses.size[index] || 0}}/{{size || 0}}</td>\
+               </tr>\
+             </table>\
+             <p v-if="allWordFound">Bravo ! Vous avez trouvé tous les mots possibles (bonification du score avec le temps restant)</p>\
+           </div>\
+           <div class="col-md-6 col-xs-12" v-show="state!==\'RUNNING\'">\
+             <b-input-group id="pseudo" prepend="Pseudo">\
+               <b-form-input v-model="pseudo" type="text" @keyup.enter="changePseudo"></b-form-input>\
+             </b-input-group>\
+             <b-input-group id="color" prepend="Couleur">\
+               <b-form-input v-model="color" type="color" @change="changeColor"></b-form-input>\
+             </b-input-group>\
+             <p v-if="options">Vous devez trouver en {{options.duration}}s le plus de mots contenant de {{options.min_letters}} à  {{options.max_letters}} lettres. Pour ce faire vous pouvez déplacer les lettres présentes dans les cases afin de former des mots. Si vous trouvez tous les mots possibles le temsp restant sera ajouté à votre score.</p>\
+             <b-input-group id="ready" prepend="Prêt à jouer ?">\
+               <b-form-checkbox v-model="ready" @change="userReady"></b-form-checkbox>\
+             </b-input-group>\
+             <div v-if="loaded && options.creator===auth.uid && state!==\'RUNNING\'">\
+               <b-input-group prepend="Lien à partager" class="mb-2">\
+                 <b-form-input type="text" :value="`${link}`"></b-form-input>\
+                 <b-input-group-append>\
+                   <b-button v-on:click="copyLinkInClipboard"><i class="fa fa-clipboard"></i></b-button>\
+                 </b-input-group-append>\
+               </b-input-group>\
+               <b-button variant="secondary" @click="modifyGame" class="me-2">Configurer la partie</b-button>\
+               <b-button variant="primary" @click="startGame">Démarrer la partie</b-button>\
+             </div>\
+           </div>\
+           <div class="col-md-6 col-xs-12">\
+             <table class="table table-stripped">\
+               <caption>Liste des joueurs</caption>\
+               <thead>\
+                 <tr>\
+                   <th></th><th></th><th></th><th>prêt?</th><th>score</th>\
+                 </tr>\
+               </thead>\
+               <tbody>\
+                 <tr v-for="(user, index) in Object.values(users || {}).sort((a,b)=>{return b.score-a.score})" :class="{disconnect: !user.connected}">\
+                   <td>{{index+1}}</td>\
+                   <td class="fixedTd" :style="{backgroundColor: user.color}">&nbsp;</td>\
+                   <td>{{user.pseudo || user.name}}<span v-if="user.uid === auth.uid"> (You)</span></td>\
+                   <td class="fixedTd"><span v-if="user.ready">X</span></td>\
+                   <td> {{user.score}}</td>\
+                 </tr>\
+               </tbody>\
+             </table>\
+           </div>\
+         </div>\
+         <div v-if="loading">\
+             <b-progress :value="loadingProgress" max="loadingPrevision" show-progress animated></b-progress>\
+         </div>\
+         <div class="row" v-if="options" v-show="this.state===\'RUNNING\'" id="redips-drag">\
+           <div class="col-md-12">\
+             <table ref="game" class="game">\
+               <tr ref="line1">\
+                 <td v-for="index in options.max_letters+options.empty_places" :key="index">\
+                 </td>\
+               </tr>\
+               <tr ref="line2">\
+                 <td v-for="index in options.max_letters+options.empty_places" :key="index">\
+                 </td>\
+               </tr>\
+             </table>\
+           </div>\
+         </div>\
+         <div v-if="options && this.state===\'FINISHED\' && responses && responses.words && responses.size" class="row results">\
+           <div class="col-md-12 mt-2">\
+             <p>Solutions : </p>\
+             <div v-for="size, index in solutions.size" class="result">\
+               <p class="header">{{index}}</p>\
+               <p class="header">{{responses.size[index] || 0}}/{{size || 0}}</p>\
+               <p v-for="letters in Object.keys(solutions.words).filter(w => w.length==index)" class="words">\
+                 <a v-for="word in solutions.words[letters]" target="blank" :class="responses.words[letters] ? \'found\': null" :href="wordDefinitionURL(word)">{{word}}</a>\
+                 <span v-for="(user, uid) in users" class="userResult" :title="user.pseudo || user.name" :style="{backgroundColor: user.color}">\
+                   <span v-if="user.responses && user.responses.words && user.responses.words[letters]">x</span>\
+                   <span v-else>&nbsp;</span>\
+                 </span>\
+               </p>\
+             </div>\
+           </div>\
+         </div>\
+       </div>\
+     </div>',
+       created: function() {
+         Vue.prototype.$db = new Webcom(new Webcom.App(appId, webcomURL)).child(subPath);
+         this.$db.addAuthCallback((error, auth) => {
+		   if (error) {
+		     this.auth=null;
+		   } else {
+		     if (auth) {
+			   this.auth=auth;
+               this.$db.child('users').child(`#${this.auth.uid}`).transaction((info) => {
+                 const newInfo={
+                   name: this.auth.displayName || this.auth.providerUid,
+                   lastSeen: Webcom.ServerValue.TIMESTAMP
+                 };
+                 if (info && info.pseudo) {
+                   newInfo.pseudo=info.pseudo
+                 }
+                 if (info && info.color) {
+                   newInfo.color=info.color;
+                 } else {
+                   newInfo.color=this.selectColor(parseInt(Math.random()*100));
+                 }
+                 this.auth.pseudo=newInfo.pseudo;
+                 this.auth.color=newInfo.color;
+                 console.log("newInfo", newInfo);
+                 return newInfo;
+               }, (error) => {
+                 this.load();
+               });
+		     } else {
+			   this.auth=null;
+               this.$db.authAnonymously();
+		     }
+		   }
+	     });
+       },
+	   updated: function () {
+		 this.$nextTick(function () {
+		   if (this.options) {
+			 const tdSize=($(this.$refs.game).width()/(this.options.max_letters+this.options.empty_places))-(this.options.max_letters+this.options.empty_places)*3;
+			 const marginSize = parseInt(tdSize*0.1);
+			 $(".game td").width(`${tdSize}px`).height(`${tdSize}px`);
+			 $(".letter").width(`${tdSize-marginSize}px`).height(`${tdSize-marginSize}px`).css("font-size", `${tdSize-marginSize}px`).css("line-height", `${tdSize-marginSize}px`);
+			 
+		   }
+		 });
+	   },
+       methods: {
+		 copyLinkInClipboard() {
+		   console.log("copyLinkInClipboard", window.location);
+		   navigator.clipboard.writeText(window.location);
+		 },
+		 wordDefinitionURL(word) {
+		   return dictionaries[this.options.dictionary].definition_url.replace("[WORD]", word);
+		 },
+		 saveOptions() {
+		   this.$refs.settings.launchGame();
+		 },
+         load() {
+           let searchParams = new URLSearchParams(window.location.search);
+           if (searchParams.has('id')) {
+             this.gameID = searchParams.get('id');
+           } else {
+             this.gameID = this.$db.child("games").push().name();
+             searchParams.set('id', this.gameID)
+               history.replaceState(null, null, "?" + searchParams.toString());
+           }
+		   this.link=window.location;
+           this.$db.child('games').child(`#${this.gameID}`).child('meta').once('value', (s) => {
+             this.options = s.val();
+             this.initialized = true;
+             if (this.options) {
+               this.loadGame();
+               this.waitForUsers();
+             }
+           });
+         },
+         loadGame() {
+           this.loading=true;
+           this.loadingPrevision=0;
+           const promises = [];
+           $.getJSON( dictionaries[this.options.dictionary].file )
+             .done(( current_dict ) => {
+               for (let i=this.options.min_letters; i<=this.options.max_letters; i++) {
+                 this.loadingPrevision+=current_dict.words[i]*(i*2+4)*1.023;
+                 const p=$.getJSON( `${current_dict.lang}/${i}.json` )
+                   .done( ( words ) => {
+                     this.words[i]=words;
+                     this.loadingProgress+=current_dict.words[i]*(i*2+4)*1.023;
+                   });
+                 promises.push(p);
+               }
+               Promise.all(promises).then(() => {
+                 this.loading=false;
+                 this.loaded=true;
+                 this.waitForStartGame();
+               });
+             });
+         },
+         updateCountdown() {
+           this.countdown=parseInt((this.endedAt-Date.now())/1000);
+         },
+         stopGame() {
+           console.log("stopGame");
+           clearInterval(this.countdownInterval);
+           this.startedAt=null;
+
+           if (this.auth.uid === this.options.creator) {
+             this.$db.child('games').child(`#${this.gameID}`).child('game').child("state").set("FINISHED");
+           }
+         },
+         waitForStartGame() {
+           console.log("waitForStartGame");
+           this.$db.child('games').child(`#${this.gameID}`).child('game').on("value", (s)=> {
+             const game = s.val();
+             if (game) {
+               this.state=game.state;
+               this.letters = game.letters.split("");
+			   this.allWordFound=false;
+			   if (game.state==="START") {
+				 this.responses={
+				   "words": {},
+				   "size": {
+					 "total": 0
+				   }
+				 };
+				 for (let length=options.min_letters; length<=options.max_letters; length++) {
+				   this.responses.size[length]=0;
+				 }
+                 this.ready=false;
+                 this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).update({
+                   "score": 0,
+                   "ready": false,
+                   "responses": this.responses
+                 });
+                 // game master set RUNNING state
+                 if (this.auth.uid === this.options.creator) {
+				   this.$db.child('games').child(`#${this.gameID}`).child('game').child("state").set("RUNNING");
+                 }
+			   }
+               if (!this.startedAt) {
+				 this.solutions = this.findSolutions(this.letters);
+                 if (game.state!=="FINISHED") {
+                   this.startedAt=game.startedAt;
+                   this.endedAt=game.startedAt+this.options.duration*1000;
+                   clearInterval(this.countdownInterval);
+                   clearTimeout(this.stopTimeout);
+                   this.countdownInterval=setInterval(this.updateCountdown, 1000);
+                   this.stopTimeout=setTimeout(this.stopGame, this.endedAt-Date.now());
+                 
+                   $(this.$refs.line2).children().empty();
+                   $(this.$refs.line1).children().empty();
+                   this.letters.forEach((letter, idx) => {
+                     $(this.$refs.line1).children().eq(idx).append($("<div>").addClass("redips-drag letter").text(letter));
+                   });
+                   this.verifyLetters();
+                   const rd = REDIPS.drag;
+	               // initialization
+	               rd.init();
+                   rd.hover.colorTd="#6393C1";
+		           // set drop option to "shift"
+	               rd.dropMode = 'shift';
+	               rd.shift.mode = 'horizontal2';
+	               //	rd.shift.after = 'always';
+                   rd.shift.overflow = 'source';
+	               // enable animation on shifted elements
+	               rd.animation.shift = true;
+	               // set animation loop pause
+	               rd.animation.pause = 20;
+	               // do not ask on delete
+	               rd.trash_ask = false;
+                   rd.event.dropped = this.verifyLetters;
+                 }
+               }
+             }
+           });
+         },
+         verifyLetters() {
+           ['line1', 'line2'].forEach(line => {
+             const words=$(this.$refs[line]).children().map((i, c) => $(c).children().length > 0 ? $(c).children().eq(0).text() : " ").toArray().join("").split(" ").filter(n => (n && n.length>=this.options.min_letters)).map(w => strip_accents(w.toLowerCase()));
+             const places=$(this.$refs[line]).children().map((i, c) => $(c).children().length > 0 ? i : " ").toArray().join("").split(" ").filter(n => (n && n.length>=this.options.min_letters)).map(n=>n.split(""));
+             words.forEach((word, i) => {
+               this.verifyWord(word, line, places[i]);
+             });
+           });
+         },
+         verifyWord(word, line, places) {
+           if (this.solutions.words[word]) {
+             let my_class="alreadyFound";
+             const responses=this.responses;
+             if (! (responses.words && responses.words[word])) {
+               my_class="found";
+               this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("score").increment(word.length);
+               responses.words[word]=true
+			   if (! responses.size[word.length]) {
+				 responses.size[word.length]=0;
+			   }
+			   responses.size[word.length]++;
+			   responses.size.total++;
+               this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("responses").set(responses, (error)=>{console.log("error", error)});
+			   if (responses.size.total === this.solutions.size.total) {
+				 this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("score").increment(parseInt((this.endedAt-Date.now())/1000));
+				 this.allWordFound=true;
+			   }
+             }
+             places.forEach(idx => {
+               $(this.$refs[line]).children().eq(idx).find(".letter").addClass(my_class);
+               setTimeout(() => {
+                 $(this.$refs[line]).children().eq(idx).find(".letter").removeClass(my_class);
+               }, 500);
+             });
+           }
+         },
+         findSolutions(letters) {
+           const solutions={
+		     "words":{},
+		     "size":{
+               "total":0
+		     }
+           };
+           const re=new RegExp("^"+letters.sort().join("?")+"?$", "i");
+           for (let length=this.options.min_letters; length<=this.options.max_letters; length++) {
+             solutions.size[length]=0;
+             this.words[length].forEach((line) => {
+               if (line.substring(0, length).match(re)) {
+	             const word=line.substring(length+1);
+                 const key=strip_accents(word);
+                 if (!solutions.words[key]) {
+                   solutions.size[length]++;
+                   solutions.size.total++;
+                   solutions.words[key]=[];
+                 }
+                 solutions.words[key].push(word);
+               }
+             });
+           }
+           return solutions;
+         },
+         findWord() {
+           const word_index = parseInt(Math.random() * this.words[this.options.max_letters].length);
+           const letters = this.words[this.options.max_letters][word_index].split(" ")[0];
+           return letters.toUpperCase().split("").sort(() => { return 0.5 - Math.random() }).join("");
+         },
+         changePseudo() {
+           this.$db.child('users').child(`#${this.auth.uid}`).child("pseudo").set(this.pseudo);
+
+           this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("pseudo").set(this.pseudo);
+         },
+         changeColor() {
+           this.$db.child('users').child(`#${this.auth.uid}`).child("color").set(this.color);
+
+           this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("color").set(this.color);
+         },
+         userReady() {
+           this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("ready").set(this.ready);
+         },
+		 modifyGame() {
+		   this.lastOptions={...this.options};
+		   this.options=null;
+		 },
+         startGame() {
+           const letters = this.findWord();
+           this.$db.child('games').child(`#${this.gameID}`).child('game').update({
+             startedAt: Webcom.ServerValue.TIMESTAMP,
+             state: "START",
+             letters: letters,
+           });
+         },
+         selectColor(number) {
+           const hue = number * 137.508; // use golden angle approximation
+           return `hsl(${hue},50%,75%)`;
+         },
+         waitForUsers() {
+           this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).update({
+             name: this.auth.displayName || this.auth.providerUid,
+             pseudo: this.auth.pseudo || "",
+             color: this.auth.color || null,
+             connected: true,
+             ready: false,
+           });
+           this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("connected").onDisconnect().set(false);
+           this.$db.child('games').child(`#${this.gameID}`).child('participants').on("value", (s) => {
+             this.users=s.val();
+             if (this.users && this.users[this.auth.uid]) {
+               if (this.users[this.auth.uid].pseudo) {
+                 this.pseudo=this.users[this.auth.uid].pseudo;
+               }
+               this.score=this.users[this.auth.uid].score;
+               this.responses=this.users[this.auth.uid].responses || {
+                 "size":{
+                   "total":0
+		         },
+                 "words": {}
+               };
+               this.responses.words =  this.responses.words || {};
+			 }
+           });
+         }
+       }
+     });
+  </script>
+</html>
