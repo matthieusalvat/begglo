@@ -483,7 +483,7 @@
        methods: {
 		 copyLinkInClipboard() {
 		   console.log("copyLinkInClipboard", window.location);
-		   navigator.clipboard.writeText(window.location);
+		   navigator.clipboard.writeText(`Une petite partie de Begglo ? Cliques sur le lien suivant ${window.location}`);
 		 },
 		 wordDefinitionURL(word) {
 		   return dictionaries[this.options.dictionary].definition_url.replace("[WORD]", word);
