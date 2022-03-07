@@ -80,11 +80,13 @@
 	 }
 
 	 .gameInfo div {
-       height: 3em;
+       height: 100%;
+       max-height: 3em;
 	   margin: auto;
 	   color: white;
-       width: 3em;
-       border-radius: 3em;
+       width: 100%;
+       max-width: 3em;
+       border-radius: 30em;
        text-align: center;
        font-weight: bold;
        font-size: 3em;
@@ -335,18 +337,24 @@
        template: '<div>\
        <b-navbar toggleable="lg" type="dark" class="mb-4">\
          <b-navbar-brand href="#" class="ms-2">Begglo</b-navbar-brand>\
-       </b-navbar>\
-       <div class="container-xxl">\
+         <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>\
+         <b-collapse id="nav-collapse" is-nav>\
+           <b-navbar-nav>\
+             <b-nav-item href="./">Créer une partie</b-nav-item>\
+           </b-navbar-nav>\
+         </b-collapse>\
+      </b-navbar>\
+      <div class="container-xxl">\
          <b-modal ok-only no-close-on-backdrop no-close-on-esc hide-header-close :title="\'Paramètres de la partie\'" :visible="auth && initialized && ! options" @ok="saveOptions">\
-           <settings ref="settings" v-if="auth && initialized && ! options" v-bind:gameID="gameID" v-bind:auth="auth" v-on:loadGame="load" v-bind:prefill="lastOptions"/>\
+           <settings ref="settings" v-if="auth && initialized && ! options" v-bind:gameID="gameID" v-bind:auth="auth" v-on:loadGame="reload" v-bind:prefill="lastOptions"/>\
          </b-modal>\
-         <div class="row" v-if="auth && initialized && options">\
+         <div class="row mt-2" v-if="auth && initialized && options">\
            <div class="col-md-6 col-xs-12" v-if="options" v-show="this.state===\'RUNNING\'">\
              <div class="row gameInfo">\
-               <span class="col-md-6"><div v-show="countdown" class="info coutdown" :style="{backgroundColor: this.countdown<10 ? \'red\' : \'green\'}">{{this.countdown}} s</div></span>\
-               <span class="col-md-6"><div class="info score">{{score}} pt</div></span>\
+               <span class="col-6"><div v-show="countdown" class="info coutdown" :style="{backgroundColor: this.countdown<10 ? \'red\' : \'green\'}">{{this.countdown}} s</div></span>\
+               <span class="col-6"><div class="info score">{{score}} pt</div></span>\
              </div>\
-             <table class="table solutions">\
+             <table class="table table-sm solutions mt-2">\
                <caption>Nombre de mots trouvés/à trouver</caption>\
                <tr>\
                  <td v-for="size, index in solutions.size">{{index}}</td>\
@@ -357,9 +365,12 @@
              </table>\
              <p v-if="allWordFound">Bravo ! Vous avez trouvé tous les mots possibles (bonification du score avec le temps restant)</p>\
            </div>\
-           <div class="col-md-6 col-xs-12" v-show="state!==\'RUNNING\'">\
+           <div class="col-md-6 col-xs-12 mb-2" v-show="state!==\'RUNNING\'">\
              <b-input-group id="pseudo" prepend="Pseudo">\
                <b-form-input v-model="pseudo" type="text" @keyup.enter="changePseudo"></b-form-input>\
+               <b-input-group-append>\
+                  <b-button @click="changePseudo"><i class="fa fa-check"></i></b-button>\
+               </b-input-group-append>\
              </b-input-group>\
              <b-input-group id="color" prepend="Couleur">\
                <b-form-input v-model="color" type="color" @change="changeColor"></b-form-input>\
@@ -380,7 +391,7 @@
              </div>\
            </div>\
            <div class="col-md-6 col-xs-12">\
-             <table class="table table-stripped">\
+             <table class="table table-sm">\
                <caption>Liste des joueurs</caption>\
                <thead>\
                  <tr>\
@@ -388,7 +399,7 @@
                  </tr>\
                </thead>\
                <tbody>\
-                 <tr v-for="(user, index) in Object.values(users || {}).sort((a,b)=>{return b.score-a.score})" :class="{disconnect: !user.connected}">\
+                 <tr v-for="(user, index) in Object.values(users || {}).sort((a,b)=>{return b.score-a.score})" :class="{\'bg-light\': !user.connected}">\
                    <td>{{index+1}}</td>\
                    <td class="fixedTd" :style="{backgroundColor: user.color}">&nbsp;</td>\
                    <td>{{user.pseudo || user.name}}<span v-if="user.uid === auth.uid"> (You)</span></td>\
@@ -434,6 +445,12 @@
          </div>\
        </div>\
      </div>',
+       mounted() {
+         window.addEventListener('resize', this.resize);
+       },
+       unmounted() {
+         window.removeEventListener('resize', this.resize);
+       },
        created: function() {
          Vue.prototype.$db = new Webcom(new Webcom.App(appId, webcomURL)).child(subPath);
          this.$db.addAuthCallback((error, auth) => {
@@ -457,7 +474,6 @@
                  }
                  this.auth.pseudo=newInfo.pseudo;
                  this.auth.color=newInfo.color;
-                 console.log("newInfo", newInfo);
                  return newInfo;
                }, (error) => {
                  this.load();
@@ -469,18 +485,15 @@
 		   }
 	     });
        },
-	   updated: function () {
-		 this.$nextTick(function () {
+       methods: {
+         resize() {
 		   if (this.options) {
-			 const tdSize=($(this.$refs.game).width()/(this.options.max_letters+this.options.empty_places))-(this.options.max_letters+this.options.empty_places)*3;
+			 const tdSize=($(this.$refs.game).width()-(this.options.max_letters+this.options.empty_places)*2)/(this.options.max_letters+this.options.empty_places);
 			 const marginSize = parseInt(tdSize*0.1);
 			 $(".game td").width(`${tdSize}px`).height(`${tdSize}px`);
 			 $(".letter").width(`${tdSize-marginSize}px`).height(`${tdSize-marginSize}px`).css("font-size", `${tdSize-marginSize}px`).css("line-height", `${tdSize-marginSize}px`);
-			 
 		   }
-		 });
-	   },
-       methods: {
+         },
 		 copyLinkInClipboard() {
 		   console.log("copyLinkInClipboard", window.location);
 		   navigator.clipboard.writeText(`Une petite partie de Begglo ? Cliques sur le lien suivant ${window.location}`);
@@ -491,6 +504,10 @@
 		 saveOptions() {
 		   this.$refs.settings.launchGame();
 		 },
+         reload() {
+           console.log("reload");
+           this.$db.child('games').child(`#${this.gameID}`).child('game').child("state").set("RELOAD");
+         },
          load() {
            let searchParams = new URLSearchParams(window.location.search);
            if (searchParams.has('id')) {
@@ -549,17 +566,20 @@
            this.$db.child('games').child(`#${this.gameID}`).child('game').on("value", (s)=> {
              const game = s.val();
              if (game) {
-               this.state=game.state;
                this.letters = game.letters.split("");
 			   this.allWordFound=false;
-			   if (game.state==="START") {
+               if (this.state!=="RELOAD" && game.state==="RELOAD") {
+                 this.load();
+               }
+			   if (this.state!=="START" && game.state==="START") {
+                 console.log("START");
 				 this.responses={
 				   "words": {},
 				   "size": {
 					 "total": 0
 				   }
 				 };
-				 for (let length=options.min_letters; length<=options.max_letters; length++) {
+				 for (let length=this.options.min_letters; length<=this.options.max_letters; length++) {
 				   this.responses.size[length]=0;
 				 }
                  this.ready=false;
@@ -576,6 +596,7 @@
                if (!this.startedAt) {
 				 this.solutions = this.findSolutions(this.letters);
                  if (game.state!=="FINISHED") {
+                   console.log("RUNNING OR START");
                    this.startedAt=game.startedAt;
                    this.endedAt=game.startedAt+this.options.duration*1000;
                    clearInterval(this.countdownInterval);
@@ -588,7 +609,10 @@
                    this.letters.forEach((letter, idx) => {
                      $(this.$refs.line1).children().eq(idx).append($("<div>").addClass("redips-drag letter").text(letter));
                    });
+                   this.resize();
                    this.verifyLetters();
+                   setTimeout(this.resize, 200);
+
                    const rd = REDIPS.drag;
 	               // initialization
 	               rd.init();
@@ -607,6 +631,8 @@
                    rd.event.dropped = this.verifyLetters;
                  }
                }
+               
+               this.state=game.state; 
              }
            });
          },
@@ -654,20 +680,22 @@
 		     }
            };
            const re=new RegExp("^"+letters.sort().join("?")+"?$", "i");
-           for (let length=this.options.min_letters; length<=this.options.max_letters; length++) {
-             solutions.size[length]=0;
-             this.words[length].forEach((line) => {
-               if (line.substring(0, length).match(re)) {
-	             const word=line.substring(length+1);
-                 const key=strip_accents(word);
-                 if (!solutions.words[key]) {
-                   solutions.size[length]++;
-                   solutions.size.total++;
-                   solutions.words[key]=[];
+           if (this.options) {
+             for (let length=this.options.min_letters; length<=this.options.max_letters; length++) {
+               solutions.size[length]=0;
+               this.words[length].forEach((line) => {
+                 if (line.substring(0, length).match(re)) {
+	               const word=line.substring(length+1);
+                   const key=strip_accents(word);
+                   if (!solutions.words[key]) {
+                     solutions.size[length]++;
+                     solutions.size.total++;
+                     solutions.words[key]=[];
+                   }
+                   solutions.words[key].push(word);
                  }
-                 solutions.words[key].push(word);
-               }
-             });
+               });
+             }
            }
            return solutions;
          },
@@ -700,6 +728,7 @@
              state: "START",
              letters: letters,
            });
+          
          },
          selectColor(number) {
            const hue = number * 137.508; // use golden angle approximation
