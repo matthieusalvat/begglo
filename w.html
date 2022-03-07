@@ -14,6 +14,7 @@
     <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue-icons.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/gh/dbunic/REDIPS_drag@master/redips-drag-min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.qrcode@1.0.3/jquery.qrcode.min.js"></script>
     
     <!-- Copyright © 2014 Monotype Imaging Inc. All rights reserved -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boosted@4.5.3/dist/css/orangeHelvetica.min.css"
@@ -332,6 +333,7 @@
 		   allWordFound: false,
            stopTimeout: null,
            countdown: "",
+           displayQrCode: false
          }
        },
        template: '<div>\
@@ -345,6 +347,9 @@
          </b-collapse>\
       </b-navbar>\
       <div class="container-xxl">\
+         <b-modal ok-only @shown="makeQrCode" v-model="displayQrCode" title="QrCode">\
+           <div id="qrcode"></div>\
+         </b-modal>\
          <b-modal ok-only no-close-on-backdrop no-close-on-esc hide-header-close :title="\'Paramètres de la partie\'" :visible="auth && initialized && ! options" @ok="saveOptions">\
            <settings ref="settings" v-if="auth && initialized && ! options" v-bind:gameID="gameID" v-bind:auth="auth" v-on:loadGame="reload" v-bind:prefill="lastOptions"/>\
          </b-modal>\
@@ -384,6 +389,9 @@
                  <b-form-input type="text" :value="`${link}`"></b-form-input>\
                  <b-input-group-append>\
                    <b-button v-on:click="copyLinkInClipboard"><i class="fa fa-clipboard"></i></b-button>\
+                 </b-input-group-append>\
+                 <b-input-group-append>\
+                   <b-button v-on:click="displayQrCode=true"><i class="fa fa-qrcode"></i></b-button>\
                  </b-input-group-append>\
                </b-input-group>\
                <b-button variant="secondary" @click="modifyGame" class="me-2">Configurer la partie</b-button>\
@@ -435,7 +443,7 @@
                <p class="header">{{responses.size[index] || 0}}/{{size || 0}}</p>\
                <p v-for="letters in Object.keys(solutions.words).filter(w => w.length==index)" class="words">\
                  <a v-for="word in solutions.words[letters]" target="blank" :class="responses.words[letters] ? \'found\': null" :href="wordDefinitionURL(word)">{{word}}</a>\
-                 <span v-for="(user, uid) in users" class="userResult" :title="user.pseudo || user.name" :style="{backgroundColor: user.color}">\
+                 <span v-for="(user, uid) in users" class="userResult" :title="user.pseudo || user.name" :style="{backgroundColor: user.color, color: getContrastYIQ(user.color)}">\
                    <span v-if="user.responses && user.responses.words && user.responses.words[letters]">x</span>\
                    <span v-else>&nbsp;</span>\
                  </span>\
@@ -486,6 +494,14 @@
 	     });
        },
        methods: {
+         getContrastYIQ(hexcolor) {
+           hexcolor = hexcolor.replace("#", "");
+           var r = parseInt(hexcolor.substr(0,2),16);
+           var g = parseInt(hexcolor.substr(2,2),16);
+           var b = parseInt(hexcolor.substr(4,2),16);
+           var yiq = ((r*299)+(g*587)+(b*114))/1000;
+           return (yiq >= 128) ? 'black' : 'white';
+         },
          resize() {
 		   if (this.options) {
 			 const tdSize=($(this.$refs.game).width()-(this.options.max_letters+this.options.empty_places)*2)/(this.options.max_letters+this.options.empty_places);
@@ -493,6 +509,9 @@
 			 $(".game td").width(`${tdSize}px`).height(`${tdSize}px`);
 			 $(".letter").width(`${tdSize-marginSize}px`).height(`${tdSize-marginSize}px`).css("font-size", `${tdSize-marginSize}px`).css("line-height", `${tdSize-marginSize}px`);
 		   }
+         },
+         makeQrCode() {
+           $('#qrcode').qrcode(this.link.href);
          },
 		 copyLinkInClipboard() {
 		   console.log("copyLinkInClipboard", window.location);
