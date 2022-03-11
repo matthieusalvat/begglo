@@ -31,6 +31,13 @@
 
     
 	<style>
+     body {
+       user-select: none;
+       -moz-user-select: none;
+       -webkit-user-select: none;
+       -ms-user-select: none;
+     }
+     
      table {
        border-collapse: collapse;
        border: 0px;
@@ -295,7 +302,7 @@
              word: "",
              creation: Webcom.ServerValue.TIMESTAMP
            }, (error)=> {
-             console.log("error", error);
+             console.log("launchGame", error);
              this.$emit('loadGame');
            });
          }
@@ -330,7 +337,6 @@
            options: null,
 		   lastOptions: null,
            countdownInterval: null,
-		   allWordFound: false,
            stopTimeout: null,
            countdown: "",
            displayQrCode: false
@@ -368,7 +374,7 @@
                  <td v-for="size, index in solutions.size">{{responses.size[index] || 0}}/{{size || 0}}</td>\
                </tr>\
              </table>\
-             <p v-if="allWordFound">Bravo ! Vous avez trouvé tous les mots possibles (bonification du score avec le temps restant)</p>\
+             <p v-if="responses && responses.allWordFound">Bravo ! Vous avez trouvé tous les mots possibles (bonification du score avec le temps restant)</p>\
            </div>\
            <div class="col-md-6 col-xs-12 mb-2" v-show="state!==\'RUNNING\'">\
              <b-input-group id="pseudo" prepend="Pseudo">\
@@ -437,6 +443,7 @@
          </div>\
          <div v-if="options && this.state===\'FINISHED\' && responses && responses.words && responses.size" class="row results">\
            <div class="col-md-12 mt-2">\
+             <p v-if="responses && responses.allWordFound">Bravo ! Vous avez trouvé tous les mots possibles (bonification du score avec le temps restant)</p>\
              <p>Solutions : </p>\
              <div v-for="size, index in solutions.size" class="result">\
                <p class="header">{{index}}</p>\
@@ -478,7 +485,7 @@
                  if (info && info.color) {
                    newInfo.color=info.color;
                  } else {
-                   newInfo.color=this.selectColor(parseInt(Math.random()*100));
+                   newInfo.color=this.selectColor();
                  }
                  this.auth.pseudo=newInfo.pseudo;
                  this.auth.color=newInfo.color;
@@ -524,10 +531,16 @@
 		   this.$refs.settings.launchGame();
 		 },
          reload() {
-           console.log("reload");
-           this.$db.child('games').child(`#${this.gameID}`).child('game').child("state").set("RELOAD");
+		   console.log("reload", this.startedAt);
+
+           if (! this.startedAt) {
+             this.loadGame();
+           } else {
+             this.$db.child('games').child(`#${this.gameID}`).child('game').child("state").set("RELOAD");
+           }
          },
          load() {
+		   console.log("load");
            let searchParams = new URLSearchParams(window.location.search);
            if (searchParams.has('id')) {
              this.gameID = searchParams.get('id');
@@ -537,36 +550,44 @@
                history.replaceState(null, null, "?" + searchParams.toString());
            }
 		   this.link=window.location;
-           this.$db.child('games').child(`#${this.gameID}`).child('meta').once('value', (s) => {
-             this.options = s.val();
-             this.initialized = true;
-             if (this.options) {
-               this.loadGame();
-               this.waitForUsers();
-             }
-           });
+		   this.$db.parent().child(".info/connection/connected").on("value", snapshot => {
+			 const connected = snapshot.val();
+			 if (connected) {
+			   this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("connected").set(true);
+			 }
+		   });
+		   this.loadGame();
          },
          loadGame() {
            this.loading=true;
            this.loadingPrevision=0;
-           const promises = [];
-           $.getJSON( dictionaries[this.options.dictionary].file )
-             .done(( current_dict ) => {
-               for (let i=this.options.min_letters; i<=this.options.max_letters; i++) {
-                 this.loadingPrevision+=current_dict.words[i]*(i*2+4)*1.023;
-                 const p=$.getJSON( `${current_dict.lang}/${i}.json` )
-                   .done( ( words ) => {
-                     this.words[i]=words;
-                     this.loadingProgress+=current_dict.words[i]*(i*2+4)*1.023;
-                   });
-                 promises.push(p);
-               }
-               Promise.all(promises).then(() => {
-                 this.loading=false;
-                 this.loaded=true;
-                 this.waitForStartGame();
-               });
-             });
+		   console.log("loadGame");
+           this.$db.child('games').child(`#${this.gameID}`).child('meta').once('value', (s) => {
+             this.options = s.val();
+			 console.log("loadGame options", this.options);
+             this.initialized = true;
+             if (this.options) {
+			   const promises = [];
+			   $.getJSON( dictionaries[this.options.dictionary].file )
+				 .done(( current_dict ) => {
+				   for (let i=this.options.min_letters; i<=this.options.max_letters; i++) {
+					 this.loadingPrevision+=current_dict.words[i]*(i*2+4)*1.023;
+					 const p=$.getJSON( `${current_dict.lang}/${i}.json` )
+					   .done( ( words ) => {
+						 this.words[i]=words;
+						 this.loadingProgress+=current_dict.words[i]*(i*2+4)*1.023;
+					   });
+					 promises.push(p);
+				   }
+				   Promise.all(promises).then(() => {
+					 this.loading=false;
+					 this.loaded=true;
+					 this.waitForUsers();
+					 this.waitForStartGame();
+				   });
+				 });
+             }
+           });
          },
          updateCountdown() {
            this.countdown=parseInt((this.endedAt-Date.now())/1000);
@@ -584,15 +605,16 @@
            console.log("waitForStartGame");
            this.$db.child('games').child(`#${this.gameID}`).child('game').on("value", (s)=> {
              const game = s.val();
+             console.log("game", game);
              if (game) {
                this.letters = game.letters.split("");
-			   this.allWordFound=false;
                if (this.state!=="RELOAD" && game.state==="RELOAD") {
-                 this.load();
+                 this.loadGame();
                }
-			   if (this.state!=="START" && game.state==="START") {
+               if (this.state!=="START" && game.state==="START") {
                  console.log("START");
 				 this.responses={
+				   "allWordFound": false,
 				   "words": {},
 				   "size": {
 					 "total": 0
@@ -677,11 +699,12 @@
 			   }
 			   responses.size[word.length]++;
 			   responses.size.total++;
-               this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("responses").set(responses, (error)=>{console.log("error", error)});
 			   if (responses.size.total === this.solutions.size.total) {
 				 this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("score").increment(parseInt((this.endedAt-Date.now())/1000));
-				 this.allWordFound=true;
+				 responses.allWordFound=true;
 			   }
+			   this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("responses").set(responses, (error)=>{console.log("error", error)});
+
              }
              places.forEach(idx => {
                $(this.$refs[line]).children().eq(idx).find(".letter").addClass(my_class);
@@ -730,7 +753,6 @@
          },
          changeColor() {
            this.$db.child('users').child(`#${this.auth.uid}`).child("color").set(this.color);
-
            this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("color").set(this.color);
          },
          userReady() {
@@ -749,9 +771,13 @@
            });
           
          },
-         selectColor(number) {
-           const hue = number * 137.508; // use golden angle approximation
-           return `hsl(${hue},50%,75%)`;
+         selectColor() {
+		   const letters = '0123456789ABCDEF';
+		   let color = '#';
+		   for (let i = 0; i < 6; i++) {
+			 color += letters[Math.floor(Math.random() * 16)];
+		   }
+		   return color;
          },
          waitForUsers() {
            this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).update({
@@ -764,12 +790,20 @@
            this.$db.child('games').child(`#${this.gameID}`).child('participants').child(this.auth.uid).child("connected").onDisconnect().set(false);
            this.$db.child('games').child(`#${this.gameID}`).child('participants').on("value", (s) => {
              this.users=s.val();
+			 if (this.options && this.users && this.auth.uid === this.options.creator) {
+			   const connectedUsers=Object.values(this.users).filter(u => !u.disconnected).length;
+			   const winningUsers=Object.values(this.users).filter(u => !u.disconnected && u.responses && u.responses.allWordFound).length;
+			   if (connectedUsers === winningUsers) {
+				 this.$db.child('games').child(`#${this.gameID}`).child('game').child("state").set("FINISHED");
+			   }
+			 }
              if (this.users && this.users[this.auth.uid]) {
                if (this.users[this.auth.uid].pseudo) {
                  this.pseudo=this.users[this.auth.uid].pseudo;
                }
                this.score=this.users[this.auth.uid].score;
                this.responses=this.users[this.auth.uid].responses || {
+				 "allWordFound": false,
                  "size":{
                    "total":0
 		         },
